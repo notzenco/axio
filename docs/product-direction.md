@@ -45,6 +45,10 @@ every possible integration exists. The stable contract will cover the CLI,
 persisted schemas and migrations, connector definitions, release artifacts,
 and core workspace behavior.
 
+The outcome plan and its acceptance criteria are maintained in
+[`product-plan.md`](product-plan.md); current implementation status lives in
+[`status-and-direction.md`](status-and-direction.md).
+
 ## Explicit non-goals for the foundation
 
 - Rebuilding the previous native LLM agent loop.

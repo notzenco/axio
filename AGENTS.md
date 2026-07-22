@@ -6,7 +6,9 @@
 - `cargo clippy --workspace --all-targets --locked -- -D warnings` - lint gate.
 - `cargo test --workspace --locked` - complete Rust test suite.
 - `cargo run -p axio-cli -- status --json` - CLI smoke test.
+- `node --check apps/axio-desktop/ui/app.js` - desktop JavaScript syntax.
 - `cargo run -p axio-desktop` - run the Tauri desktop shell.
+- `cargo build --release -p axio-desktop --locked` - native release build.
 
 ## Architecture
 
@@ -24,6 +26,7 @@
   deliberate compatibility surfaces.
 - Keep credentials out of repository files and command output.
 - Do not add hosted accounts, billing, or cloud dependencies to the local core.
+- `docs/status-and-direction.md` is the canonical implementation-status record.
 
 ## Definition of done
 

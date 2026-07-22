@@ -41,3 +41,7 @@ The workspace sidebar and context inspector collapse independently. Collapsing
 either must return its space to the task timeline; at narrow widths they become
 overlays so the primary task remains usable. Diff, output, and plan are panels
 inside the one context inspector rather than separate navigation destinations.
+
+See [`protocol.md`](protocol.md) for the current state vocabulary and command
+boundary, [`security-model.md`](security-model.md) for trust boundaries, and
+[`status-and-direction.md`](status-and-direction.md) for what remains simulated.

@@ -81,3 +81,7 @@ For each repository, confirm that `git status --short --branch` is clean and
 that the local commit matches its upstream branch. In the private workspace,
 push the `repos/axio` commit first and then commit and push the updated submodule
 pointer in `axio-workspace`.
+
+After setup, use the [`documentation index`](README.md) and
+[`status and direction`](status-and-direction.md) as the current handoff rather
+than archived machine-specific notes.

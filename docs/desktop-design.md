@@ -60,3 +60,7 @@ focus states, and glass surfaces keep an opaque-enough fallback for readability.
 Implementation screenshots and the responsive comparison record live in
 [`design/`](design/), with the latest verification summarized in
 [`../design-qa.md`](../design-qa.md).
+
+Controls that currently mutate demo state rather than real agent, terminal, or
+Git resources are identified in
+[`status-and-direction.md`](status-and-direction.md).

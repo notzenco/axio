@@ -55,10 +55,10 @@ cargo run -p axio-desktop
 For a fresh computer, including the private coordination workspace and the
 optional research library, follow [new-machine setup](docs/new-machine-setup.md).
 
-See [product direction](docs/product-direction.md),
-[desktop design](docs/desktop-design.md), [architecture](docs/architecture.md),
-[reference repositories](docs/reference-repositories.md), and
-[versioning](docs/versioning.md).
+The [documentation index](docs/README.md) links the complete current set. Start
+with [status and direction](docs/status-and-direction.md) for the exact boundary
+between implemented behavior, simulated UI, missing runtime work, and intended
+outcomes.
 
 ## Status
 

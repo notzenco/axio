@@ -11,3 +11,7 @@ or automation depending on the old behavior.
 Axio must explicitly document its CLI, persisted data, connector schema,
 orchestration protocol, supported platforms, update behavior, and migration
 policy.
+
+Release evidence and publication gates are defined in
+[`releasing.md`](releasing.md). User-visible changes are recorded in
+[`../CHANGELOG.md`](../CHANGELOG.md).
