@@ -16,11 +16,13 @@ Confirm `capabilities/default.json` still grants only
 `core:window:allow-start-dragging` in addition to `core:default`, and that the
 UI calls the allowlisted `window_action` fallback only with `drag`.
 
-## A collapsed sidebar still appears to reserve space
+## A panel reserves space or overlaps another panel
 
 Verify the body class combination and viewport. With both closed at wide
 desktop size, `.workspace-shell` must resolve to zero-width side tracks and one
-main track. At compact widths the sidebars are overlays. Compare against
+main track. At 720px and below, the workspace and inspector are mutually
+exclusive overlays; opening either must close the other and show one scrim.
+Compare against
 [`../design-qa.md`](../design-qa.md).
 
 ## Windows reports incremental compilation access warnings

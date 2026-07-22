@@ -78,8 +78,9 @@ left side is one collapsible workspace sidebar; there is no redundant icon rail.
 **Why:** The task remains primary and side tools should not reserve permanent
 space or duplicate navigation.
 
-**Consequence:** Both sidebars must independently return space to the task and
-become overlays on compact windows.
+**Consequence:** Both sidebars must independently return space to the task on
+wide windows. At 720px and below they are mutually exclusive, focus-contained
+overlays with predictable dismissal and focus restoration.
 
 ## D-008: versions describe outcomes
 

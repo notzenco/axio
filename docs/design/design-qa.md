@@ -1,5 +1,8 @@
 # Axio desktop design QA
 
+Historical baseline from the initial unified-shell implementation. The current
+audited interaction and responsive QA is [`../../design-qa.md`](../../design-qa.md).
+
 ## Evidence
 
 - Source visual: `docs/design/axio-task-focus.png`

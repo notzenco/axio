@@ -1,6 +1,6 @@
 # Status and direction
 
-Last verified: 2026-07-22.
+Last verified: 2026-07-23.
 
 This is the canonical living status for Axio. It distinguishes demonstrated
 behavior from interface simulation so screenshots are never mistaken for a
@@ -26,11 +26,12 @@ the same Rust core. The paused legacy switcher is not a second current app.
 | Core state | Validated agent transitions, task selection/creation, direction events, and review decisions. | `crates/axio-core`; five unit tests. |
 | CLI | `status`, `status --json`, and `version` over the shared demo snapshot. | CLI smoke test in CI. |
 | Native shell | Tauri window, drag/minimize/maximize/close, narrow command bridge, and restrictive CSP. | Native release build and manual Windows run. |
-| Task workspace | Task/worktree selection, chronological activity, agent pause/resume state, task creation, directions, and review decisions. | Browser and native interaction verification. |
-| Navigation | Independently collapsible workspace and context sidebars, focus mode, command palette, and responsive overlays. | `design-qa.md` at desktop and compact viewports. |
-| Context | Diff, command output, and plan tabs open in one right inspector. | UI interaction verification. |
+| Task workspace | Task/worktree selection, chronological activity, explicit attention state, inline task validation, agent controls, directions, and review decisions. | Browser and native interaction verification. |
+| Navigation | Independently collapsible wide panels, mutually exclusive focus-contained compact overlays, focus mode, and a command palette with recovery state. | `design-qa.md` at desktop and compact viewports. |
+| Composer | Visible target, worktree, direction mode, review policy, and target-aware send label. | UI interaction and accessibility-tree verification. |
+| Context | Pinned/expanded inspector with changed-file navigation, completed command record, output wrapping, and read-only plan states. | UI interaction verification. |
 | Appearance | Glass intensity, compact density, reduced-motion override, and local browser-view persistence. | `localStorage` behavior in `ui/app.js`. |
-| Delivery checks | Windows CI runs formatting, Clippy, tests, and CLI JSON smoke. | GitHub `CI` workflow; latest unified-desktop run passed. |
+| Delivery checks | Windows CI runs formatting, Clippy, tests, and CLI JSON smoke; local verification adds JavaScript syntax, interaction QA, and native release compilation. | `.github/workflows/ci.yml`, `testing.md`, and the latest `design-qa.md`. |
 | Documentation | Architecture, product, design, setup, references, security, testing, and release guidance. | This documentation index and link audit. |
 
 ## Functional but simulated
@@ -97,9 +98,12 @@ dates. The dependency order is:
 Detailed scope and acceptance criteria are in
 [`product-plan.md`](product-plan.md). Architecture and product choices that
 should not be reopened casually are in [`decisions.md`](decisions.md).
-The accepted next interface refinement is preserved in
-[`ui-improvement-plan.md`](ui-improvement-plan.md); it remains planned rather
-than implemented.
+The first audited interface refinement is implemented and verified in
+[`ui-improvement-plan.md`](ui-improvement-plan.md),
+[`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md), and
+[`../design-qa.md`](../design-qa.md). Remaining overview, live-data, native
+assistive-technology, and failure/recovery work stays subordinate to the real
+runtime outcomes above.
 
 ## Definition of a dependable daily workspace
 

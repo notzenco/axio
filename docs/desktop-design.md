@@ -10,8 +10,8 @@ switching, the command palette, and focus mode.
 - **Task zoom:** one chronological narrative containing every agent event,
   question, approval, command, and file change.
 - **Focus zoom:** the same task canvas with navigation and the inspector hidden.
-- **Context inspector:** diff, output, files, terminal, and plan for the currently
-  selected event.
+- **Context inspector:** changed files, diff, completed command output, and a
+  read-only plan for the selected task.
 
 The central timeline is the source of narrative truth. Agent cards are useful
 for portfolio monitoring, but they do not become separate chat silos inside a
@@ -24,12 +24,18 @@ task. Approval requests appear inline at the point that produced them.
 - Drag any non-interactive titlebar area to move the window; hold `Alt` to drag
   from any non-interactive surface.
 - The titlebar workspace and context buttons independently reveal their side
-  panels. Closing a panel returns its width to the task canvas.
-- Agent presence chips expose lifecycle state and the immediate pause/resume
-  action.
-- Review actions open the contextual inspector rather than navigating away.
-- The composer targets all task agents by default and makes narrower targeting
-  explicit.
+  panels on wide windows. At 720px and below, only one overlay can be open.
+- Compact overlays use a scrim, contain keyboard focus, close with Escape, and
+  restore focus to the control that opened them.
+- Agent presence chips open the Agents panel; only explicitly labelled
+  Pause/Resume controls change demo lifecycle state.
+- Review status appears in the task and timeline, while Return with feedback
+  and Approve review exist only in the inspector.
+- The composer shows target, worktree, direction mode, and review policy before
+  sending, and its action label follows the selected target.
+- Empty task submission remains in the dialog with linked inline guidance.
+- Focus mode has one Exit focus mode control and restores the previous panel
+  layout when it ends.
 
 ## Visual direction
 
@@ -65,7 +71,8 @@ Controls that currently mutate demo state rather than real agent, terminal, or
 Git resources are identified in
 [`status-and-direction.md`](status-and-direction.md).
 
-The accepted next refinement—flattened event hierarchy, attention states,
-explicit composer context, agent-thread identity, selective glass, inspector
-peek/pin behavior, motion, density, and accessibility—is specified in
-[`ui-improvement-plan.md`](ui-improvement-plan.md).
+The audited hierarchy, attention, composer, inspector, responsive, and keyboard
+pass is implemented. Its evidence and remaining refinements are tracked in
+[`ui-improvement-plan.md`](ui-improvement-plan.md),
+[`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md), and
+[`../design-qa.md`](../design-qa.md).

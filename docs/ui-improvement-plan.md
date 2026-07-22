@@ -1,22 +1,32 @@
 # UI improvement plan
 
-Status: accepted design direction for future implementation.
+Status: first audited pass implemented; remaining work tracked below.
 
-This document preserves the next Axio interface refinement pass so work can
-continue consistently on another computer. It is a design specification, not a
-claim that these changes are implemented.
+This document records the accepted Axio interface direction, what the
+2026-07-22 audited pass implemented, and which parts still depend on real
+workspace data or broader product states.
 
 ## Evidence and limits
 
-The recommendations are grounded in the Axio task-workspace screenshots and
-responsive states reviewed during the 2026-07-22 desktop design work. A fresh
-capture attempt for this final critique could not be accepted: the in-app
-browser was unavailable to the audit connection, the targetable native window
-was the legacy Axio build rather than the fresh `0.0.1` workspace, and Windows
-browser capture stopped when it could not establish the current URL safely.
+The direction is grounded in the screenshot-backed
+[`UI audit`](ui-audit-2026-07-22.md). The completed pass was recaptured at
+1440x900, 960x720, 720x900, and 360x800; final evidence and interaction results
+are in [`../design-qa.md`](../design-qa.md).
 
-Before implementation, capture the current fresh UI again at the viewports in
-[`testing.md`](testing.md) and use those images as the new visual baseline.
+## Implementation status
+
+| Outcome | Current status | Remaining work |
+| --- | --- | --- |
+| Timeline hierarchy | Implemented foundation | Apply the three levels to real connector event variants. |
+| Attention state | Implemented for active/review/complete demo states | Add question, failure, conflict, timeout, and notification states. |
+| Composer context | Implemented target, worktree, mode, and review policy | Add attachments and truthful connector permissions. |
+| Accessibility | Keyboard/focus, non-colour labels, reduced motion, and contrast implemented | Verify native screen readers, 200% zoom, and Windows high contrast. |
+| Inspector modes | Pinned, expanded, and compact overlay behavior implemented | Persist width and add real hunk navigation/comment behavior. |
+| Agent thread | Implemented foundation | Extend provenance to handoffs and real multi-agent events. |
+| Selective glass | Implemented foundation | Recheck against native transparency on every supported platform. |
+| Task overview | Not implemented | Design with real repository, task, and recovery data. |
+| Purposeful motion | Partially implemented | Add semantic handoff/event motion only when real events exist. |
+| Density modes | Partially implemented | Make compact evidence and task summaries materially denser. |
 
 ## Desired result
 
@@ -236,16 +246,17 @@ reducing important target sizes or hiding attention state.
 - All widths: no horizontal document overflow; dialogs and menus remain inside
   the visible window; focus returns to the invoking control after dismissal.
 
-## Suggested implementation passes
+## Remaining implementation passes
 
 These are dependency-aware passes, not release promises:
 
-1. **Hierarchy pass:** event levels, attention model, composer context strip,
-   contrast, targets, and focus states.
-2. **Identity pass:** agent thread, selective glass, inspector peek/expand/pin,
-   and meaningful overview state.
-3. **Polish pass:** motion tokens, genuinely different density modes, empty,
-   loading, failure, and recovery states.
+1. **Completed audited pass:** event hierarchy, review attention, composer
+   context, contrast, focus behavior, selective glass, inspector modes, task
+   validation, and command-palette recovery.
+2. **Runtime-state pass:** real question, failure, conflict, permission,
+   terminal, diff, and recovery states using truthful data.
+3. **Re-entry and density pass:** meaningful task overview, materially
+   different density modes, and evidence-backed semantic motion.
 
 Avoid polishing simulated data so deeply that it delays the real repository,
 connector, terminal, and Git outcomes in [`product-plan.md`](product-plan.md).
@@ -255,7 +266,7 @@ The UI pass should establish primitives that can receive truthful live events.
 
 For each pass:
 
-- capture the same state at 1440 x 900, 839 x 912, and 390 x 780;
+- capture the same state at 1440 x 900, 960 x 720, 720 x 900, and 360 x 800;
 - test comfortable/compact, reduced motion, maximum/minimum glass, focus mode,
   both sidebars closed, inspector overlay, approval, failure, and empty state;
 - verify keyboard order, visible focus, accessibility names, target sizes, and
@@ -267,7 +278,8 @@ For each pass:
 
 ## Completion criteria
 
-This design direction is complete when the interface is calmer with ordinary
-history, louder only when the user must act, explicit about destination and
-authority, visually recognisable as Axio, and fully usable with keyboard,
-reduced motion, compact windows, and non-colour state cues.
+The first pass meets the hierarchy, review-attention, destination, keyboard,
+compact-overlay, reduced-motion, and non-colour criteria for current demo
+states. The direction is fully complete only after real runtime states, task
+overview, native accessibility checks, and materially different density modes
+meet the same standard.
