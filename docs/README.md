@@ -24,6 +24,8 @@ workspace are historical evidence, not current instructions.
   rules.
 - [`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md) — screenshot-backed UX,
   responsive, and accessibility audit to resolve before runtime implementation.
+- [`ui-audit-implementation.md`](ui-audit-implementation.md) — committed scope,
+  non-goals, and acceptance criteria for the audited interface pass.
 - [`design/`](design/) — implementation screenshots and visual QA evidence.
 - [`decisions.md`](decisions.md) — settled architectural and product decisions.
 - [`reference-repositories.md`](reference-repositories.md) — all external
