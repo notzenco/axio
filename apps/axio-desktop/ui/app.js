@@ -30,10 +30,37 @@ const toast = document.querySelector("#toast");
 const palette = document.querySelector("#command-palette");
 const newTaskDialog = document.querySelector("#new-task-dialog");
 const settingsDialog = document.querySelector("#settings-dialog");
+const compactOverlayMedia = window.matchMedia("(max-width: 720px)");
 let currentSnapshot = fallbackSnapshot;
 let toastTimer;
 let audienceIndex = 0;
 let lastInspectorPanel = "diff";
+let layoutBeforeFocus = { sidebarOpen: true, inspectorOpen: false };
+let lastOverlayTrigger;
+
+const diffFiles = {
+  app: { path: "ui/app.js", added: "+126", removed: "−42", lines: [
+    ["context", "1", " const invoke = window.__TAURI__?.core?.invoke;"],
+    ["remove", "2", " − addTimelineDirection(message);"],
+    ["add", "2", " + currentSnapshot = await invoke("],
+    ["add", "3", " +   \"send_direction\","],
+    ["add", "4", " +   { taskId, message }"],
+    ["add", "5", " + );"],
+  ] },
+  styles: { path: "ui/styles.css", added: "+84", removed: "−18", lines: [
+    ["context", "41", " .workspace-shell { display: grid; }"],
+    ["remove", "42", " − grid-template-columns: 236px 1fr 390px;"],
+    ["add", "42", " + grid-template-columns: 236px minmax(420px, 1fr) 390px;"],
+    ["add", "43", " + transition: grid-template-columns .28s ease;"],
+  ] },
+  index: { path: "ui/index.html", added: "+31", removed: "−6", lines: [
+    ["context", "88", " <section id=\"panel-diff\">"],
+    ["remove", "89", " − <div class=\"file-toolbar\">ui/app.js</div>"],
+    ["add", "89", " + <div class=\"diff-file-list\" role=\"tablist\">"],
+    ["add", "90", " +   <button role=\"tab\">ui/app.js</button>"],
+    ["add", "91", " + </div>"],
+  ] },
+};
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -98,17 +125,22 @@ function renderAgents(task) {
     const color = agentColor(agent);
     const row = element("button", `agent-row status-${status}`);
     row.type = "button";
-    row.title = `${nextTransition(status).label} ${agent.name}`;
-    row.append(element("i", `agent-dot ${color}`), element("span", "", agent.name), element("span", "", status));
+    const transition = nextTransition(status);
+    row.title = `${transition.label} ${agent.name}`;
+    row.setAttribute("aria-label", `${transition.label} ${agent.name}, currently ${status}`);
+    const state = element("span", "agent-state");
+    state.append(element("small", "", status), element("strong", "", transition.label));
+    row.append(element("i", `agent-dot ${color}`), element("span", "", agent.name), state);
     row.addEventListener("click", () => transitionAgent(agent, row));
     agentList.append(row);
 
     if (!task?.agent_ids.includes(agent.id)) continue;
     const chip = element("button", `presence-chip ${status}`);
     chip.type = "button";
-    chip.title = `${agent.name}: ${status}. Click to ${nextTransition(status).label.toLowerCase()}.`;
+    chip.title = `${agent.name}: ${status}. Open agent controls.`;
+    chip.setAttribute("aria-label", `${agent.name}: ${status}. Open agent controls.`);
     chip.append(element("i", color), element("span", "", agent.name));
-    chip.addEventListener("click", () => transitionAgent(agent, chip));
+    chip.addEventListener("click", () => setSidebarPanel("agents"));
     presence.append(chip);
   }
 }
@@ -122,8 +154,9 @@ function renderTasks() {
     const row = element("button", `task-row${isSelected ? " active" : ""}`);
     row.type = "button";
     row.dataset.taskId = task.id;
-    row.append(element("span", `task-state ${stateColor}`), element("span", "", task.title));
-    if (task.unread > 0) row.append(element("b", "", String(task.unread)));
+    row.setAttribute("aria-label", `${task.title}, ${task.review === "pending" ? "review required" : task.status}`);
+    const stateLabel = task.review === "pending" ? "Review" : task.status === "completed" ? "Done" : "Active";
+    row.append(element("span", `task-state ${stateColor}`), element("span", "", task.title), element("b", "task-state-label", stateLabel));
     row.addEventListener("click", () => selectTask(task.id));
     taskList.append(row);
 
@@ -172,13 +205,10 @@ function renderApproval(task, activity) {
   const card = element("div", "approval-card");
   const copy = element("div");
   copy.append(element("strong", "", activity.summary), element("p", "", activity.detail ?? "Review is required to continue."));
-  const reject = element("button", "secondary-button", "Return");
-  reject.type = "button";
-  const approve = element("button", "approval-button", "Approve");
-  approve.type = "button";
-  reject.addEventListener("click", () => decideReview(task.id, false));
-  approve.addEventListener("click", () => decideReview(task.id, true));
-  card.append(element("div", "approval-icon", "!"), copy, reject, approve);
+  const review = element("button", "approval-button", "Review changes");
+  review.type = "button";
+  review.addEventListener("click", () => activateInspectorPanel("diff", true));
+  card.append(element("div", "approval-icon", "!"), copy, review);
   return card;
 }
 
@@ -231,9 +261,10 @@ function renderWorkspace(snapshot) {
   document.querySelector("#branch-name").textContent = snapshot.branch;
   document.querySelector("#task-title").textContent = task.title;
   document.querySelector("#plan-title").textContent = task.title;
-  document.querySelector("#task-status").textContent = task.review === "pending" ? "Awaiting review" : task.status === "completed" ? "Complete" : "In progress";
+  document.querySelector("#task-status").textContent = task.review === "pending" ? "Review required" : task.status === "completed" ? "Complete" : "In progress";
   document.querySelector("#task-worktree").textContent = task.worktree;
   document.querySelector("#status-worktree").textContent = worktreeName;
+  document.querySelector("#composer-worktree").textContent = worktreeName;
   const reviewButton = document.querySelector("#review-task");
   reviewButton.hidden = task.review !== "pending";
   reviewButton.querySelector("span").textContent = String(task.changed_files ?? 0);
@@ -275,25 +306,88 @@ async function decideReview(taskId, approved) {
   }
 }
 
+function updateOverlayScrim() {
+  const panelOpen = !body.classList.contains("sidebar-hidden") || !body.classList.contains("inspector-hidden");
+  body.classList.toggle("panel-overlay-open", compactOverlayMedia.matches && panelOpen && !body.classList.contains("focus-mode"));
+}
+
+function focusCompactOverlay(panel) {
+  if (!compactOverlayMedia.matches) return;
+  requestAnimationFrame(() => panel.querySelector("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary")?.focus());
+}
+
+function trapCompactOverlayFocus(event) {
+  if (event.key !== "Tab" || !compactOverlayMedia.matches || !body.classList.contains("panel-overlay-open")) return;
+  const panel = !body.classList.contains("inspector-hidden") ? document.querySelector("#inspector") : document.querySelector("#sidebar");
+  const focusable = [...panel.querySelectorAll("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary")].filter((control) => !control.hidden && control.offsetParent !== null);
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (!panel.contains(document.activeElement)) {
+    event.preventDefault();
+    (event.shiftKey ? last : first).focus();
+  } else if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 function setFocusMode(enabled) {
+  if (enabled === body.classList.contains("focus-mode")) return;
+  if (enabled) {
+    layoutBeforeFocus = {
+      sidebarOpen: !body.classList.contains("sidebar-hidden"),
+      inspectorOpen: !body.classList.contains("inspector-hidden"),
+    };
+  }
   body.classList.toggle("focus-mode", enabled);
   const control = document.querySelector("#focus-toggle");
   control.setAttribute("aria-pressed", String(enabled));
-  control.querySelector("span:last-child").textContent = enabled ? "Exit" : "Focus";
+  control.setAttribute("aria-label", enabled ? "Exit focus mode" : "Enter focus mode");
+  control.title = enabled ? "Exit focus mode" : "Enter focus mode";
+  control.querySelector("span:last-child").textContent = enabled ? "Exit focus mode" : "Focus";
+  document.querySelector("#open-focus").hidden = enabled;
+  if (enabled) {
+    const sidebarToggle = document.querySelector("#sidebar-toggle");
+    const inspectorToggle = document.querySelector("#inspector-toggle");
+    sidebarToggle.setAttribute("aria-pressed", "false");
+    sidebarToggle.setAttribute("aria-label", "Open workspace sidebar");
+    sidebarToggle.title = "Exit focus mode to open the workspace sidebar";
+    inspectorToggle.setAttribute("aria-pressed", "false");
+    inspectorToggle.setAttribute("aria-label", "Open context sidebar");
+    inspectorToggle.title = "Exit focus mode to open the context sidebar";
+  } else {
+    setSidebarOpen(layoutBeforeFocus.sidebarOpen, { preserveFocus: true });
+    setInspectorOpen(layoutBeforeFocus.inspectorOpen, { preserveFocus: true });
+  }
+  updateOverlayScrim();
 }
 
-function setSidebarOpen(open) {
+function setSidebarOpen(open, { preserveFocus = false } = {}) {
+  if (open && compactOverlayMedia.matches) setInspectorOpen(false, { preserveFocus: true });
+  if (open && !preserveFocus && document.activeElement instanceof HTMLElement) lastOverlayTrigger = document.activeElement;
   body.classList.toggle("sidebar-hidden", !open);
   const toggle = document.querySelector("#sidebar-toggle");
   toggle.setAttribute("aria-pressed", String(open));
+  toggle.setAttribute("aria-label", open ? "Close workspace sidebar" : "Open workspace sidebar");
   toggle.title = open ? "Close workspace sidebar" : "Open workspace sidebar";
+  updateOverlayScrim();
+  if (open) focusCompactOverlay(document.querySelector("#sidebar"));
 }
 
-function setInspectorOpen(open) {
+function setInspectorOpen(open, { preserveFocus = false } = {}) {
+  if (open && compactOverlayMedia.matches) setSidebarOpen(false, { preserveFocus: true });
+  if (open && !preserveFocus && document.activeElement instanceof HTMLElement) lastOverlayTrigger = document.activeElement;
   body.classList.toggle("inspector-hidden", !open);
   const toggle = document.querySelector("#inspector-toggle");
   toggle.setAttribute("aria-pressed", String(open));
+  toggle.setAttribute("aria-label", open ? "Close context sidebar" : "Open context sidebar");
   toggle.title = open ? "Close context sidebar" : "Open context sidebar";
+  updateOverlayScrim();
+  if (open) focusCompactOverlay(document.querySelector("#inspector"));
 }
 
 function setSidebarPanel(panelName) {
@@ -303,14 +397,15 @@ function setSidebarPanel(panelName) {
     button.setAttribute("aria-selected", String(active));
   });
   document.querySelectorAll(".sidebar-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `sidebar-${panelName}`));
+  if (body.classList.contains("focus-mode")) setFocusMode(false);
   setSidebarOpen(true);
-  body.classList.remove("focus-mode");
 }
 
-function activateInspectorPanel(panelName) {
+function activateInspectorPanel(panelName, expand = false) {
   lastInspectorPanel = panelName;
+  if (body.classList.contains("focus-mode")) setFocusMode(false);
   setInspectorOpen(true);
-  body.classList.remove("focus-mode");
+  if (expand && !compactOverlayMedia.matches) setInspectorExpanded(true);
   const titles = { diff: "Review", terminal: "Command output", plan: "Task plan" };
   document.querySelector("#inspector-title").textContent = titles[panelName];
   document.querySelectorAll(".inspector-tabs [data-panel]").forEach((button) => {
@@ -325,6 +420,16 @@ function openSettings() {
   if (!settingsDialog.open) settingsDialog.showModal();
 }
 
+function openNewTaskDialog() {
+  const input = document.querySelector("#new-task-prompt");
+  const error = document.querySelector("#new-task-error");
+  input.removeAttribute("aria-invalid");
+  error.textContent = "Describe the outcome before creating the task.";
+  error.hidden = true;
+  if (!newTaskDialog.open) newTaskDialog.showModal();
+  requestAnimationFrame(() => input.focus());
+}
+
 function openPalette() {
   if (!palette.open) palette.showModal();
   const search = document.querySelector("#palette-search");
@@ -335,9 +440,12 @@ function openPalette() {
 
 function filterPalette(query) {
   const needle = query.trim().toLowerCase();
+  let visible = 0;
   document.querySelectorAll(".palette-section button").forEach((button) => {
     button.hidden = needle !== "" && !button.textContent.toLowerCase().includes(needle);
+    if (!button.hidden) visible += 1;
   });
+  document.querySelector("#palette-empty").hidden = visible > 0;
 }
 
 function cycleAudience() {
@@ -345,7 +453,36 @@ function cycleAudience() {
   const names = ["All agents", ...currentSnapshot.agents.filter((agent) => task?.agent_ids.includes(agent.id)).map((agent) => agent.name)];
   audienceIndex = (audienceIndex + 1) % names.length;
   document.querySelector("#audience-label").textContent = names[audienceIndex];
+  document.querySelector(".send-button span:first-child").textContent = `Send to ${names[audienceIndex].toLowerCase()}`;
   showToast(`Directions will go to ${names[audienceIndex]}`);
+}
+
+function setInspectorExpanded(expanded) {
+  body.classList.toggle("inspector-expanded", expanded);
+  const control = document.querySelector("#inspector-expand");
+  control.setAttribute("aria-pressed", String(expanded));
+  control.setAttribute("aria-label", expanded ? "Use compact inspector" : "Expand inspector");
+  control.title = expanded ? "Use compact inspector" : "Expand inspector";
+}
+
+function selectDiffFile(key) {
+  const file = diffFiles[key];
+  if (!file) return;
+  document.querySelectorAll("[data-diff-file]").forEach((button) => {
+    const selected = button.dataset.diffFile === key;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  document.querySelector("#active-diff-file").textContent = file.path;
+  document.querySelector("#active-diff-add").textContent = file.added;
+  document.querySelector("#active-diff-remove").textContent = file.removed;
+  const code = document.querySelector(".diff-view code");
+  code.replaceChildren(...file.lines.map(([kind, number, value]) => {
+    const line = element("span", `line ${kind}`);
+    line.append(element("b", "", number), document.createTextNode(value));
+    return line;
+  }));
+  document.querySelector(".diff-view").setAttribute("aria-label", `Local diff for ${file.path}`);
 }
 
 function loadAppearance() {
@@ -374,25 +511,48 @@ function saveAppearance() {
 }
 
 body.classList.add("inspector-hidden");
-body.classList.toggle("sidebar-hidden", window.matchMedia("(max-width: 720px)").matches);
+body.classList.toggle("sidebar-hidden", compactOverlayMedia.matches);
 loadAppearance();
 setSidebarOpen(!body.classList.contains("sidebar-hidden"));
 setInspectorOpen(false);
+selectDiffFile("app");
 
-document.querySelector("#sidebar-toggle").addEventListener("click", () => setSidebarOpen(body.classList.contains("sidebar-hidden")));
+document.querySelector("#sidebar-toggle").addEventListener("click", () => {
+  if (body.classList.contains("focus-mode")) {
+    setFocusMode(false);
+    setSidebarOpen(true);
+  } else setSidebarOpen(body.classList.contains("sidebar-hidden"));
+});
 document.querySelector("#focus-toggle").addEventListener("click", () => setFocusMode(!body.classList.contains("focus-mode")));
 document.querySelector("#open-focus").addEventListener("click", () => setFocusMode(true));
 document.querySelector("#inspector-toggle").addEventListener("click", () => {
-  if (body.classList.contains("inspector-hidden")) activateInspectorPanel(lastInspectorPanel);
+  if (body.classList.contains("focus-mode")) {
+    setFocusMode(false);
+    activateInspectorPanel(lastInspectorPanel);
+  } else if (body.classList.contains("inspector-hidden")) activateInspectorPanel(lastInspectorPanel);
   else setInspectorOpen(false);
 });
-document.querySelector("#inspector-close").addEventListener("click", () => setInspectorOpen(false));
-document.querySelector("#review-task").addEventListener("click", () => activateInspectorPanel("diff"));
+document.querySelector("#inspector-close").addEventListener("click", () => {
+  setInspectorOpen(false);
+  (lastOverlayTrigger ?? document.querySelector("#inspector-toggle")).focus();
+});
+document.querySelector("#inspector-expand").addEventListener("click", () => setInspectorExpanded(!body.classList.contains("inspector-expanded")));
+document.querySelector("#review-task").addEventListener("click", () => activateInspectorPanel("diff", true));
 document.querySelector("#approve-changes").addEventListener("click", () => decideReview(selectedTask().id, true));
 document.querySelector("#return-changes").addEventListener("click", () => decideReview(selectedTask().id, false));
 document.querySelector("#settings-button").addEventListener("click", openSettings);
 document.querySelector("#terminal-context").addEventListener("click", () => activateInspectorPanel("terminal"));
 document.querySelector("#audience-button").addEventListener("click", cycleAudience);
+document.querySelector("#overlay-scrim").addEventListener("click", () => {
+  if (!body.classList.contains("inspector-hidden")) setInspectorOpen(false);
+  else setSidebarOpen(false);
+  lastOverlayTrigger?.focus();
+});
+document.querySelectorAll("[data-diff-file]").forEach((button) => button.addEventListener("click", () => selectDiffFile(button.dataset.diffFile)));
+document.querySelector("#terminal-wrap").addEventListener("click", (event) => {
+  const wrapped = document.querySelector("#panel-terminal").classList.toggle("wrap-output");
+  event.currentTarget.setAttribute("aria-pressed", String(wrapped));
+});
 document.querySelectorAll("[data-sidebar-panel]").forEach((button) => button.addEventListener("click", () => setSidebarPanel(button.dataset.sidebarPanel)));
 document.querySelectorAll("[data-status-action]").forEach((button) => button.addEventListener("click", () => {
   const action = button.dataset.statusAction;
@@ -433,18 +593,33 @@ document.querySelectorAll("[data-open-palette]").forEach((button) => button.addE
 document.querySelector("#palette-search").addEventListener("input", (event) => filterPalette(event.target.value));
 palette.addEventListener("close", () => {
   if (!palette.returnValue) return;
-  if (palette.returnValue === "focus") setFocusMode(!body.classList.contains("focus-mode"));
-  else if (palette.returnValue === "review") activateInspectorPanel("diff");
+  if (palette.returnValue === "new") openNewTaskDialog();
+  else if (palette.returnValue === "focus") setFocusMode(!body.classList.contains("focus-mode"));
+  else if (palette.returnValue === "review") activateInspectorPanel("diff", true);
   else if (palette.returnValue === "settings") openSettings();
   else selectTask(palette.returnValue);
 });
 
-document.querySelector("#new-task").addEventListener("click", () => newTaskDialog.showModal());
-newTaskDialog.addEventListener("close", async () => {
-  if (newTaskDialog.returnValue !== "default") return;
+document.querySelector("#new-task").addEventListener("click", openNewTaskDialog);
+document.querySelectorAll("[data-close-new-task]").forEach((button) => button.addEventListener("click", () => newTaskDialog.close("cancel")));
+document.querySelector("#new-task-prompt").addEventListener("input", (event) => {
+  if (event.target.value.trim()) {
+    event.target.removeAttribute("aria-invalid");
+    document.querySelector("#new-task-error").hidden = true;
+  }
+});
+document.querySelector("#new-task-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
   const input = document.querySelector("#new-task-prompt");
   const title = input.value.trim();
-  if (!title) { showToast("Add an outcome before creating the task"); return; }
+  if (!title) {
+    input.setAttribute("aria-invalid", "true");
+    document.querySelector("#new-task-error").hidden = false;
+    input.focus();
+    return;
+  }
+  const createButton = document.querySelector("#create-task");
+  createButton.disabled = true;
   try {
     if (invoke) currentSnapshot = await invoke("create_task", { title });
     else {
@@ -454,9 +629,18 @@ newTaskDialog.addEventListener("close", async () => {
       currentSnapshot.selected_task = id;
     }
     input.value = "";
+    input.removeAttribute("aria-invalid");
+    document.querySelector("#new-task-error").hidden = true;
     renderWorkspace(currentSnapshot);
+    newTaskDialog.close("created");
     showToast("Task created with an isolated worktree");
-  } catch (error) { showToast(String(error)); }
+  } catch (error) {
+    document.querySelector("#new-task-error").textContent = String(error);
+    document.querySelector("#new-task-error").hidden = false;
+    input.focus();
+  } finally {
+    createButton.disabled = false;
+  }
 });
 
 document.querySelectorAll(".inspector-tabs [data-panel]").forEach((tab) => tab.addEventListener("click", () => activateInspectorPanel(tab.dataset.panel)));
@@ -486,8 +670,19 @@ document.querySelector("#prompt").addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  trapCompactOverlayFocus(event);
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); openPalette(); }
   if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "f") { event.preventDefault(); setFocusMode(!body.classList.contains("focus-mode")); }
+  if (event.key === "Escape" && compactOverlayMedia.matches && body.classList.contains("panel-overlay-open")) {
+    if (!body.classList.contains("inspector-hidden")) setInspectorOpen(false);
+    else setSidebarOpen(false);
+    lastOverlayTrigger?.focus();
+  }
+});
+
+compactOverlayMedia.addEventListener("change", () => {
+  if (compactOverlayMedia.matches && !body.classList.contains("sidebar-hidden") && !body.classList.contains("inspector-hidden")) setInspectorOpen(false);
+  updateOverlayScrim();
 });
 
 if (invoke) {

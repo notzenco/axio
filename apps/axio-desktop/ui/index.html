@@ -20,7 +20,7 @@
         </button>
         <div class="titlebar-actions">
           <span class="local-pill"><i></i> Local</span>
-          <button id="focus-toggle" class="text-button" type="button" aria-pressed="false"><span class="fluent">&#xE740;</span><span>Focus</span></button>
+          <button id="focus-toggle" class="text-button" type="button" aria-label="Enter focus mode" title="Enter focus mode" aria-pressed="false"><span class="fluent">&#xE740;</span><span>Focus</span></button>
           <button id="inspector-toggle" class="icon-button fluent" type="button" aria-label="Toggle context sidebar" title="Toggle context sidebar" aria-pressed="false">&#xE8A0;</button>
           <button id="settings-button" class="icon-button fluent" type="button" aria-label="Appearance settings" title="Appearance settings">&#xE713;</button>
         </div>
@@ -56,11 +56,13 @@
             <div class="local-card">
               <div class="local-card-heading"><span class="health-dot"></span><strong>Local engine</strong><span>Healthy</span></div>
               <p>Agent state, worktrees, and review gates stay on this machine.</p>
-              <div class="usage-row"><span>Session budget</span><strong>18%</strong></div>
+              <div class="usage-row"><span>Context window used</span><strong>18%</strong></div>
               <div class="usage-meter"><i></i></div>
             </div>
           </section>
         </aside>
+
+        <button id="overlay-scrim" class="overlay-scrim" type="button" aria-label="Close open panel" tabindex="-1"></button>
 
         <main class="task-canvas" data-tauri-drag-region>
           <div class="aurora aurora-one"></div><div class="aurora aurora-two"></div>
@@ -72,7 +74,7 @@
             </div>
             <div class="task-actions">
               <button class="quiet-button" id="open-focus" type="button"><span class="fluent">&#xE72A;</span> Focus</button>
-              <button class="primary-button" id="review-task" type="button">Review <span>3</span></button>
+              <button class="primary-button" id="review-task" type="button">Review required <span>3</span></button>
             </div>
           </header>
 
@@ -80,13 +82,17 @@
 
           <form id="composer" class="composer glass-surface">
             <div class="composer-glow"></div>
-            <label for="prompt">Direct the workspace</label>
+            <div class="composer-heading"><label for="prompt">Direct the workspace</label><span>Review gates on</span></div>
+            <div class="composer-context" aria-label="Direction context">
+              <button id="audience-button" class="context-chip audience-button" type="button" title="Change target"><span class="presence-stack"><i></i><i></i></span><span id="audience-label">All agents</span><span class="fluent mini-icon">&#xE70D;</span></button>
+              <span class="context-chip"><span class="fluent">&#xE8B7;</span><span id="composer-worktree">unify-desktop</span></span>
+              <span class="context-chip"><span class="fluent">&#xE8FD;</span> Direction</span>
+            </div>
             <textarea id="prompt" rows="2" placeholder="Ask, redirect, or start parallel work…"></textarea>
             <div class="composer-footer">
               <button id="terminal-context" class="composer-tool fluent" type="button" aria-label="Open command output" title="Open command output">&#xE756;</button>
-              <button id="audience-button" class="audience-button" type="button" title="Change audience"><span class="presence-stack"><i></i><i></i></span><span id="audience-label">All agents</span><span class="fluent mini-icon">&#xE70D;</span></button>
               <span class="send-hint">Enter to send · Shift Enter for a new line</span>
-              <button class="send-button fluent" type="submit" aria-label="Send direction">&#xE724;</button>
+              <button class="send-button" type="submit"><span>Send to all agents</span><span class="fluent">&#xE724;</span></button>
             </div>
           </form>
         </main>
@@ -94,7 +100,10 @@
         <aside id="inspector" class="inspector glass-panel" data-tauri-drag-region>
           <header class="inspector-header">
             <div><span class="eyebrow">Context</span><strong id="inspector-title">Review</strong></div>
-            <button id="inspector-close" class="icon-button fluent" type="button" aria-label="Close inspector">&#xE8BB;</button>
+            <div class="inspector-actions">
+              <button id="inspector-expand" class="icon-button fluent" type="button" aria-label="Expand inspector" title="Expand inspector" aria-pressed="false">&#xE8A7;</button>
+              <button id="inspector-close" class="icon-button fluent" type="button" aria-label="Close inspector">&#xE8BB;</button>
+            </div>
           </header>
           <div class="inspector-tabs" role="tablist" aria-label="Inspector view">
             <button class="active" role="tab" aria-selected="true" data-panel="diff">Diff</button>
@@ -103,7 +112,12 @@
           </div>
 
           <section class="inspector-panel active" id="panel-diff" role="tabpanel">
-            <div class="file-toolbar"><span class="fluent">&#xE8A5;</span><span>ui/app.js</span><span class="file-status">M</span><span class="add">+126</span><span class="remove">−42</span></div>
+            <div class="diff-file-list" role="tablist" aria-label="Changed files">
+              <button class="active" type="button" role="tab" aria-selected="true" data-diff-file="app"><span>ui/app.js</span><small>+126 −42</small></button>
+              <button type="button" role="tab" aria-selected="false" data-diff-file="styles"><span>ui/styles.css</span><small>+84 −18</small></button>
+              <button type="button" role="tab" aria-selected="false" data-diff-file="index"><span>ui/index.html</span><small>+31 −6</small></button>
+            </div>
+            <div class="file-toolbar"><span class="fluent">&#xE8A5;</span><span id="active-diff-file">ui/app.js</span><span class="file-status">Modified</span><span class="add" id="active-diff-add">+126</span><span class="remove" id="active-diff-remove">−42</span></div>
             <pre class="diff-view" aria-label="Current local diff"><code><span class="line context"><b>1</b> const invoke = window.__TAURI__?.core?.invoke;</span>
 <span class="line remove"><b>2</b> − addTimelineDirection(message);</span>
 <span class="line add"><b>2</b> + currentSnapshot = await invoke(</span>
@@ -115,11 +129,12 @@
 <span class="line add"><b>7</b> + await selectTask(task.id);</span>
 <span class="line context"><b>8</b></span>
 <span class="line add"><b>9</b> + renderWorkspace(currentSnapshot);</span></code></pre>
-            <div class="review-footer"><span>3 local changes</span><div><button id="return-changes" class="secondary-button" type="button">Return</button><button id="approve-changes" class="stage-button" type="button">Approve</button></div></div>
+            <div class="review-footer"><span>3 files · local worktree</span><div><button id="return-changes" class="secondary-button" type="button">Return with feedback</button><button id="approve-changes" class="stage-button" type="button">Approve review</button></div></div>
           </section>
 
           <section class="inspector-panel terminal-panel" id="panel-terminal" role="tabpanel">
-            <div class="terminal-toolbar"><span><i></i> Latest command output</span><span>PowerShell</span></div>
+            <div class="terminal-toolbar"><span><i></i> Completed · exit 0</span><div><span>PowerShell</span><button id="terminal-wrap" type="button" aria-pressed="false">Wrap</button></div></div>
+            <div class="command-record"><span>Latest command</span><code>cargo test --workspace</code></div>
             <pre><code><span class="terminal-path">PS W:\dev\personal\axio-workspace&gt;</span> cargo test --workspace
 
 running 5 tests
@@ -130,9 +145,10 @@ test result: <b>ok</b>. 5 passed; 0 failed
 <span class="terminal-path">PS W:\dev\personal\axio-workspace&gt;</span> <i></i></code></pre>
           </section>
           <section class="inspector-panel plan-panel" id="panel-plan" role="tabpanel">
-            <div class="plan-heading"><div><span class="eyebrow">Progress</span><strong id="plan-title">Unify the Axio desktop</strong></div><span>4 / 6</span></div>
+            <div class="plan-heading"><div><span class="eyebrow">Read-only plan</span><strong id="plan-title">Unify the Axio desktop</strong></div><span>4 / 6</span></div>
+            <p class="plan-source">Demo task plan · state is derived from local activity</p>
             <div class="plan-meter"><i></i></div>
-            <ol><li class="done">Define the product boundary</li><li class="done">Design the unified shell</li><li class="done">Connect local task state</li><li class="done">Add review gates</li><li class="active">Verify native interactions</li><li>Prepare the release</li></ol>
+            <ol><li class="done"><span>Define the product boundary</span><small>Done</small></li><li class="done"><span>Design the unified shell</span><small>Done</small></li><li class="done"><span>Connect local task state</span><small>Done</small></li><li class="done"><span>Add review gates</span><small>Done</small></li><li class="active"><span>Verify native interactions</span><small>In progress</small></li><li><span>Prepare the release</span><small>Queued</small></li></ol>
           </section>
         </aside>
       </div>
@@ -149,12 +165,13 @@ test result: <b>ok</b>. 5 passed; 0 failed
     </div>
 
     <dialog id="new-task-dialog" class="modal">
-      <form method="dialog">
-        <header><div><span class="axio-mark">A</span><div><strong>Start a task</strong><p>Create a deliberate boundary for the work.</p></div></div><button class="icon-button fluent" value="cancel" aria-label="Close">&#xE8BB;</button></header>
-        <label>Outcome<textarea id="new-task-prompt" rows="4" placeholder="What should the agents deliver?"></textarea></label>
+      <form id="new-task-form" novalidate>
+        <header><div><span class="axio-mark">A</span><div><strong>Start a task</strong><p>Create a deliberate boundary for the work.</p></div></div><button class="icon-button fluent" type="button" data-close-new-task aria-label="Close">&#xE8BB;</button></header>
+        <label>Outcome<textarea id="new-task-prompt" rows="4" placeholder="What should the agents deliver?" aria-describedby="new-task-error" required></textarea></label>
+        <p id="new-task-error" class="field-error" role="alert" hidden>Describe the outcome before creating the task.</p>
         <div class="modal-grid"><label>Repository<select><option>axio</option><option>rabbitfish</option></select></label><label>Worktree<select><option>Create an isolated worktree</option><option>Use main</option></select></label></div>
         <fieldset><legend>Agents</legend><label><input type="checkbox" checked><span class="agent-badge cyan">C</span> Codex</label><label><input type="checkbox" checked><span class="agent-badge amber">C</span> Claude Code</label><label><input type="checkbox"><span class="agent-badge violet">O</span> OpenCode</label></fieldset>
-        <footer><button class="secondary-button" value="cancel">Cancel</button><button id="create-task" class="primary-button" value="default">Create task</button></footer>
+        <footer><button class="secondary-button" type="button" data-close-new-task>Cancel</button><button id="create-task" class="primary-button" type="submit">Create task</button></footer>
       </form>
     </dialog>
 
@@ -172,7 +189,8 @@ test result: <b>ok</b>. 5 passed; 0 failed
       <form method="dialog">
         <label><span class="fluent">&#xE721;</span><input id="palette-search" type="search" placeholder="Switch task or run a command…"><kbd>Esc</kbd></label>
         <div class="palette-section" data-palette-tasks><span>Tasks</span></div>
-        <div class="palette-section"><span>Commands</span><button value="focus"><i class="fluent command-icon">&#xE740;</i><span><strong>Toggle focus mode</strong><small>Hide workspace context and inspector</small></span><kbd>Ctrl ⇧ F</kbd></button><button value="review"><i class="fluent command-icon">&#xE8A1;</i><span><strong>Open review</strong><small>Inspect the current local changes</small></span></button><button value="settings"><i class="fluent command-icon">&#xE713;</i><span><strong>Appearance settings</strong><small>Motion, density, and glass intensity</small></span></button></div>
+        <div class="palette-section"><span>Commands</span><button value="new"><i class="fluent command-icon">&#xE710;</i><span><strong>New task</strong><small>Define an outcome and isolated worktree</small></span></button><button value="focus"><i class="fluent command-icon">&#xE740;</i><span><strong>Toggle focus mode</strong><small>Hide workspace context and inspector</small></span><kbd>Ctrl ⇧ F</kbd></button><button value="review"><i class="fluent command-icon">&#xE8A1;</i><span><strong>Open review</strong><small>Inspect the current local changes</small></span></button><button value="settings"><i class="fluent command-icon">&#xE713;</i><span><strong>Appearance settings</strong><small>Motion, density, and glass intensity</small></span></button></div>
+        <p id="palette-empty" class="palette-empty" role="status" hidden><strong>No matches</strong><span>Try a task name or command.</span></p>
       </form>
     </dialog>
 
