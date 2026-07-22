@@ -97,6 +97,9 @@ dates. The dependency order is:
 Detailed scope and acceptance criteria are in
 [`product-plan.md`](product-plan.md). Architecture and product choices that
 should not be reopened casually are in [`decisions.md`](decisions.md).
+The accepted next interface refinement is preserved in
+[`ui-improvement-plan.md`](ui-improvement-plan.md); it remains planned rather
+than implemented.
 
 ## Definition of a dependable daily workspace
 

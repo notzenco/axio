@@ -16,6 +16,9 @@ repositories and is not continued by this project.
   appearance settings, bottom status bar, and contextual inspector.
 - Complete product, architecture, status, plan, development, testing, security,
   release, troubleshooting, setup, decision, and reference documentation.
+- Prioritized UI improvement specification covering event hierarchy, attention,
+  composer context, agent identity, glass, inspector behavior, overview, motion,
+  density, responsive behavior, and accessibility.
 
 ### Changed
 

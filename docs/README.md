@@ -19,6 +19,9 @@ workspace are historical evidence, not current instructions.
 
 - [`desktop-design.md`](desktop-design.md) — information architecture,
   interaction contract, responsive behavior, and visual system.
+- [`ui-improvement-plan.md`](ui-improvement-plan.md) — prioritized next UI
+  refinement with acceptance criteria, motion, responsive, and accessibility
+  rules.
 - [`design/`](design/) — implementation screenshots and visual QA evidence.
 - [`decisions.md`](decisions.md) — settled architectural and product decisions.
 - [`reference-repositories.md`](reference-repositories.md) — all external

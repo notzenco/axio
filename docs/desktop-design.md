@@ -64,3 +64,8 @@ Implementation screenshots and the responsive comparison record live in
 Controls that currently mutate demo state rather than real agent, terminal, or
 Git resources are identified in
 [`status-and-direction.md`](status-and-direction.md).
+
+The accepted next refinement—flattened event hierarchy, attention states,
+explicit composer context, agent-thread identity, selective glass, inspector
+peek/pin behavior, motion, density, and accessibility—is specified in
+[`ui-improvement-plan.md`](ui-improvement-plan.md).

@@ -4,6 +4,17 @@ This plan describes outcomes and acceptance criteria, not promised dates or a
 fixed sequence of `0.x` releases. Dependencies determine practical order; user
 evidence may change the solution inside an outcome.
 
+## Outcome: calm and truthful task interaction
+
+**User result:** routine history recedes, attention is unmistakable, and every
+direction clearly states its target, context, and authority.
+
+Scope and detailed acceptance criteria are maintained in
+[`ui-improvement-plan.md`](ui-improvement-plan.md). Implement the reusable event,
+attention, composer, inspector, accessibility, and responsive primitives
+alongside real workspace data; do not let visual polish disguise or delay the
+runtime outcomes below.
+
 ## Outcome: durable local workspace
 
 **User result:** Axio opens a real repository and restores it after restart.
