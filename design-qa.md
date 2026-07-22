@@ -1,61 +1,74 @@
-# Axio titlebar controls design QA
+# Axio desktop audited UI pass — design QA
 
-## Evidence
+Date: 2026-07-22
 
-- Source visual truth: `docs/design/axio-titlebar-source-1440x900.png`
-- Implementation screenshot: `docs/design/axio-titlebar-fixed-1440x900.png`
-- Full-view comparison: `docs/design/axio-titlebar-full-comparison.png`
-- Focused titlebar comparison: `docs/design/axio-titlebar-focused-comparison.png`
-- Viewport and state: dark desktop workspace at 1440 x 900 CSS pixels with both side panels open
-- Source pixels: 1829 x 1200; the 1441 x 901 Axio window was cropped and normalized to 1440 x 900
-- Implementation pixels: 1440 x 900 at device scale factor 1
+Branch: `fix/desktop-ui-audit`
 
-## Findings
+Contract: `docs/ui-audit-implementation.md`
 
-No actionable P0, P1, or P2 differences remain for the requested titlebar fix.
+## Result
 
-- The minimize, maximize, and close controls now occupy the final titlebar grid
-  track instead of leaving an empty fixed-width track on their right.
-- At 1440 pixels, the controls end at x=1439 against the app shell's one-pixel
-  border. The measured trailing gap is exactly 1px.
-- The same 1px trailing border is preserved at 1180, 960, 720, and 480 pixel
-  viewports, with document width equal to viewport width at every breakpoint.
+Passed for the scoped local UI prototype. The seven P1 interaction findings
+and the applicable P2 hierarchy/semantics findings from the audit now have a
+coherent implementation. Backend-authenticated, persistent, real Git, PTY, and
+failure/recovery states remain explicitly outside this pass.
 
-## Fidelity surfaces
+## Visual evidence
 
-- Typography: unchanged; the existing Inter/system stack, weights, line heights,
-  truncation, and title hierarchy match the source.
-- Spacing and layout rhythm: the unintended trailing grid track is removed;
-  all other titlebar tracks, gaps, control widths, and shell spacing are unchanged.
-- Colors and tokens: unchanged; existing glass, line, muted, hover, and close
-  states remain intact.
-- Image and icon quality: unchanged; the supplied Segoe Fluent Icons remain the
-  native-looking window-control glyphs and no image assets were introduced.
-- Copy and content: unchanged.
-
-## Focused comparison
-
-The combined titlebar evidence shows the source Close control stopping roughly
-one control group short of the right edge. In the fixed capture, Close reaches
-the shell border. A focused comparison was necessary because the defect occupies
-only the top-right portion of the full 1440 x 900 frame.
+- Baseline desktop: `docs/design/ui-audit-2026-07-22/after-desktop-1440x900.png`
+- Expanded review: `docs/design/ui-audit-2026-07-22/after-review-expanded-1440x900.png`
+- Compact review: `docs/design/ui-audit-2026-07-22/after-compact-review-720x900.png`
+- Narrow stress test: `docs/design/ui-audit-2026-07-22/after-narrow-360x800.png`
+- Inline task validation: `docs/design/ui-audit-2026-07-22/after-new-task-validation-360x800.png`
+- Original titlebar comparison: `docs/design/axio-titlebar-focused-comparison.png`
 
 ## Interaction verification
 
-- The Minimize control resolves to one enabled button and triggers the existing
-  native-window-control path in the browser fallback.
-- `cargo test -p axio-desktop --locked` passes, covering compilation of the
-  Tauri command path used by minimize, maximize, and close.
-- Browser console: no errors or warnings.
+| Flow | Result |
+| --- | --- |
+| Empty task submission | Dialog remains open; persistent error is visible; Outcome has `aria-invalid=true`; focus remains on Outcome. |
+| Review ownership | Header and timeline open the Diff inspector; only the inspector exposes Return with feedback and Approve review. |
+| Diff inspection | Three changed files are keyboard-reachable; active path and counts update; expanded inspector measures 640px at 1440px. |
+| Compact panels | Opening the inspector closes the sidebar and vice versa; the scrim is present only while a panel is open. |
+| Compact keyboard | Focus enters the panel, Tab/Shift+Tab loop inside it, Escape closes it, and focus returns to the invoking toggle. |
+| Focus mode | Hidden panels report unpressed/open affordances; Exit focus mode restores the previous open sidebar and inspector. |
+| Agent presence | Header presence opens the Agents panel without changing the agent's running state. |
+| Palette recovery | `does-not-exist` yields zero visible options and announces `No matches`; New task is a direct command. |
+| Output and plan | Output exposes completed/exit metadata and wrapping; plan exposes Done, In progress, and Queued states and states that it is read-only. |
+| Settings | Both appearance booleans render as switches and retain native checked semantics. |
 
-## Comparison history
+## Responsive and accessibility measurements
 
-1. P1 before: the wide titlebar declared seven columns for six children, so the
-   controls occupied column six and left an empty 138px column at the right.
-2. Fix: removed the redundant `auto` column from the wide titlebar grid while
-   preserving the fixed 138px window-controls track.
-3. Post-fix: full-view and focused comparisons show the controls against the
-   right border, and pixel measurements confirm the result across all responsive
-   breakpoints.
+- At 1440x900, the composer is 800px wide and the window controls end at the
+  shell's 1px border.
+- At 720x900, the inspector owns the compact viewport without competing with
+  the sidebar.
+- At 360x800, document width remains 360px, the composer stays within x=16–344,
+  and the window controls retain the 1px trailing shell border.
+- The revised `--faint` token (`#8993a4`) measures 6.39:1 on `#080a0f`, 5.84:1
+  on `#12161e`, and 5.32:1 on `#1a1f2a`.
+- Focus and context controls retain explicit accessible names when their visual
+  labels are hidden at medium and narrow breakpoints.
+- Task state, agent state/action, review attention, plan progress, and process
+  completion all pair colour with text.
+
+## Repository verification
+
+- `node --check apps/axio-desktop/ui/app.js`: passed.
+- `cargo fmt --all -- --check`: passed.
+- `cargo clippy --workspace --all-targets --locked -- -D warnings`: passed.
+- `cargo test --workspace --locked`: passed; 5 tests passed.
+- `cargo run -p axio-cli -- status --json`: passed.
+- `cargo build --release -p axio-desktop --locked`: passed.
+- Browser console warnings/errors: none.
+- Release executable: `.build/target/release/axio.exe`, 8,497,152 bytes.
+
+## Remaining design gates
+
+This pass deliberately does not claim native screen-reader verification,
+Windows high contrast, 200% zoom, real repository edge cases, connector
+authentication, process streaming, conflict resolution, persistence, or
+failure recovery. Those matched states remain required before their respective
+runtime features are implemented.
 
 final result: passed
