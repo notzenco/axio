@@ -14,7 +14,29 @@ The target experience is simple:
 
 The product may learn from Orca's orchestration, the Codex desktop app's task
 model, and Cursor's compact glass agents window without cloning any one of
-them.
+them. The complete, reproducible research catalog is documented in
+[`reference-repositories.md`](reference-repositories.md).
+
+## One desktop product
+
+Axio ships as one desktop application. Portfolio, task, review, and focused
+agent views are zoom levels of the same workspace, not separate installed
+apps. A focused window may be opened for one task, but it shares the same
+process supervision, state, permissions, and settings as the main window.
+
+The CLI remains a separate binary because scripts and terminals need a stable
+automation surface. It is a consumer of the same core, not a second user
+experience or an alternative source of truth.
+
+The default desktop view is task-first:
+
+1. The left side answers where work lives: tasks, worktrees, and agents.
+2. The center tells the chronological story of a task: messages, tool calls,
+   questions, approvals, file changes, and handoffs.
+3. The optional right inspector provides the selected diff, output, files,
+   terminal, or plan without turning those tools into permanent navigation.
+4. Focus mode hides navigation and review chrome without moving the task into
+   another product.
 
 ## Stable goal
 

@@ -3,80 +3,180 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0a0b10">
+    <meta name="theme-color" content="#090b11">
     <title>Axio</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <div class="window-shell">
+    <div class="app-shell">
       <header class="titlebar" data-tauri-drag-region>
-        <div class="brand" data-tauri-drag-region>
-          <span class="brand-mark">A</span>
-          <span>axio</span>
-          <span class="version">0.0.1</span>
+        <button id="sidebar-toggle" class="icon-button fluent" type="button" aria-label="Toggle workspace" title="Toggle workspace">&#xE700;</button>
+        <div class="wordmark" data-tauri-drag-region><span class="axio-mark">A</span><span>Axio</span></div>
+        <button class="project-pill" type="button" data-open-palette>
+          <span class="project-light"></span><span id="project-name">axio</span><span class="fluent mini-icon">&#xE70D;</span>
+        </button>
+        <button class="command-trigger" type="button" data-open-palette>
+          <span class="fluent">&#xE721;</span><span>Switch task or run a command</span><kbd>Ctrl K</kbd>
+        </button>
+        <div class="titlebar-actions">
+          <span class="local-pill"><i></i> Local</span>
+          <button id="focus-toggle" class="text-button" type="button" aria-pressed="false"><span class="fluent">&#xE740;</span><span>Focus</span></button>
+          <button id="inspector-toggle" class="icon-button fluent" type="button" aria-label="Toggle context sidebar" title="Toggle context sidebar" aria-pressed="false">&#xE8A0;</button>
+          <button id="settings-button" class="icon-button fluent" type="button" aria-label="Appearance settings" title="Appearance settings">&#xE713;</button>
         </div>
-        <div class="workspace-meta" data-tauri-drag-region>
-          <span id="project-name">axio</span>
-          <span class="separator">/</span>
-          <span id="branch-name">main</span>
+        <div class="window-controls">
+          <button class="fluent" type="button" data-window-action="minimize" aria-label="Minimize">&#xE921;</button>
+          <button class="fluent" type="button" data-window-action="maximize" aria-label="Maximize">&#xE922;</button>
+          <button class="fluent window-close" type="button" data-window-action="close" aria-label="Close">&#xE8BB;</button>
         </div>
-        <button class="icon-button" type="button" aria-label="Command palette">⌘</button>
       </header>
 
-      <div class="workspace-grid">
-        <aside class="sidebar">
-          <button class="new-agent" type="button"><span>＋</span> New agent</button>
-          <nav aria-label="Projects">
-            <p class="eyebrow">Workspace</p>
-            <button class="project-row active" type="button">
-              <span class="project-icon">AX</span>
-              <span><strong>axio</strong><small>2 agents active</small></span>
-            </button>
-          </nav>
-          <div class="sidebar-footer">
-            <span class="local-dot"></span>
-            Local workspace
+      <div class="workspace-shell">
+        <aside id="sidebar" class="sidebar glass-panel" data-tauri-drag-region>
+          <header class="sidebar-header">
+            <div><span class="eyebrow">Workspace</span><strong>Command centre</strong></div>
+            <button id="new-task" class="icon-button fluent" type="button" aria-label="New task" title="New task">&#xE710;</button>
+          </header>
+          <div class="sidebar-tabs" role="tablist" aria-label="Workspace context">
+            <button class="active" type="button" role="tab" aria-selected="true" data-sidebar-panel="tasks">Tasks</button>
+            <button type="button" role="tab" aria-selected="false" data-sidebar-panel="agents">Agents</button>
           </div>
-        </aside>
 
-        <main class="main-stage">
-          <section class="stage-heading">
-            <div>
-              <p class="eyebrow">Agent workspace</p>
-              <h1>Build in parallel.<br>Stay in control.</h1>
-            </div>
-            <div class="summary-pill"><span id="running-count">1</span> running</div>
+          <section id="sidebar-tasks" class="sidebar-panel active" aria-label="Tasks and worktrees">
+            <div id="task-list" class="task-list" aria-live="polite"></div>
+            <details class="context-disclosure">
+              <summary><span>Worktrees</span><span id="worktree-total">3</span></summary>
+              <div id="worktree-list" class="worktree-list"></div>
+            </details>
           </section>
 
-          <section id="agent-grid" class="agent-grid" aria-live="polite"></section>
+          <section id="sidebar-agents" class="sidebar-panel" aria-label="Agents">
+            <div class="panel-label"><span>Task agents</span><span id="agent-total">2 active</span></div>
+            <div id="agent-list" class="agent-list" aria-live="polite"></div>
+            <div class="local-card">
+              <div class="local-card-heading"><span class="health-dot"></span><strong>Local engine</strong><span>Healthy</span></div>
+              <p>Agent state, worktrees, and review gates stay on this machine.</p>
+              <div class="usage-row"><span>Session budget</span><strong>18%</strong></div>
+              <div class="usage-meter"><i></i></div>
+            </div>
+          </section>
+        </aside>
 
-          <form id="composer" class="composer">
+        <main class="task-canvas" data-tauri-drag-region>
+          <div class="aurora aurora-one"></div><div class="aurora aurora-two"></div>
+          <header class="task-header glass-surface">
+            <div class="task-heading">
+              <div class="task-kicker"><span class="status-pulse"></span><span id="task-status">Awaiting review</span><span>·</span><span id="task-worktree">axio/unify-desktop</span></div>
+              <h1 id="task-title">Unify the Axio desktop</h1>
+              <div class="presence" id="presence"></div>
+            </div>
+            <div class="task-actions">
+              <button class="quiet-button" id="open-focus" type="button"><span class="fluent">&#xE72A;</span> Focus</button>
+              <button class="primary-button" id="review-task" type="button">Review <span>3</span></button>
+            </div>
+          </header>
+
+          <section id="timeline" class="timeline" aria-label="Task activity"><div class="timeline-loading">Restoring local workspace…</div></section>
+
+          <form id="composer" class="composer glass-surface">
+            <div class="composer-glow"></div>
             <label for="prompt">Direct the workspace</label>
-            <textarea id="prompt" rows="2" placeholder="Ask an agent, compare approaches, or start parallel work…"></textarea>
+            <textarea id="prompt" rows="2" placeholder="Ask, redirect, or start parallel work…"></textarea>
             <div class="composer-footer">
-              <span>axio · main · local</span>
-              <button type="submit">Send <kbd>↵</kbd></button>
+              <button id="terminal-context" class="composer-tool fluent" type="button" aria-label="Open command output" title="Open command output">&#xE756;</button>
+              <button id="audience-button" class="audience-button" type="button" title="Change audience"><span class="presence-stack"><i></i><i></i></span><span id="audience-label">All agents</span><span class="fluent mini-icon">&#xE70D;</span></button>
+              <span class="send-hint">Enter to send · Shift Enter for a new line</span>
+              <button class="send-button fluent" type="submit" aria-label="Send direction">&#xE724;</button>
             </div>
           </form>
         </main>
 
-        <aside class="activity-panel">
-          <div class="panel-heading">
-            <span>Activity</span>
-            <span class="live-label">live</span>
+        <aside id="inspector" class="inspector glass-panel" data-tauri-drag-region>
+          <header class="inspector-header">
+            <div><span class="eyebrow">Context</span><strong id="inspector-title">Review</strong></div>
+            <button id="inspector-close" class="icon-button fluent" type="button" aria-label="Close inspector">&#xE8BB;</button>
+          </header>
+          <div class="inspector-tabs" role="tablist" aria-label="Inspector view">
+            <button class="active" role="tab" aria-selected="true" data-panel="diff">Diff</button>
+            <button role="tab" aria-selected="false" data-panel="terminal">Output</button>
+            <button role="tab" aria-selected="false" data-panel="plan">Plan</button>
           </div>
-          <ol id="activity-list" class="activity-list">
-            <li><span class="activity-icon success">✓</span><div><strong>Workspace restored</strong><small>Local state · just now</small></div></li>
-            <li><span class="activity-icon">↗</span><div><strong>Codex started</strong><small>agent/workspace-foundation</small></div></li>
-            <li><span class="activity-icon attention">?</span><div><strong>Review requested</strong><small>Claude Code is waiting</small></div></li>
-          </ol>
-          <div class="principle-card">
-            <span>Local-first</span>
-            <p>Your repositories and agent processes remain under your control.</p>
-          </div>
+
+          <section class="inspector-panel active" id="panel-diff" role="tabpanel">
+            <div class="file-toolbar"><span class="fluent">&#xE8A5;</span><span>ui/app.js</span><span class="file-status">M</span><span class="add">+126</span><span class="remove">−42</span></div>
+            <pre class="diff-view" aria-label="Current local diff"><code><span class="line context"><b>1</b> const invoke = window.__TAURI__?.core?.invoke;</span>
+<span class="line remove"><b>2</b> − addTimelineDirection(message);</span>
+<span class="line add"><b>2</b> + currentSnapshot = await invoke(</span>
+<span class="line add"><b>3</b> +   "send_direction",</span>
+<span class="line add"><b>4</b> +   { taskId, message }</span>
+<span class="line add"><b>5</b> + );</span>
+<span class="line context"><b>6</b></span>
+<span class="line remove"><b>7</b> − setTask(title);</span>
+<span class="line add"><b>7</b> + await selectTask(task.id);</span>
+<span class="line context"><b>8</b></span>
+<span class="line add"><b>9</b> + renderWorkspace(currentSnapshot);</span></code></pre>
+            <div class="review-footer"><span>3 local changes</span><div><button id="return-changes" class="secondary-button" type="button">Return</button><button id="approve-changes" class="stage-button" type="button">Approve</button></div></div>
+          </section>
+
+          <section class="inspector-panel terminal-panel" id="panel-terminal" role="tabpanel">
+            <div class="terminal-toolbar"><span><i></i> Latest command output</span><span>PowerShell</span></div>
+            <pre><code><span class="terminal-path">PS W:\dev\personal\axio-workspace&gt;</span> cargo test --workspace
+
+running 5 tests
+test workspace::review_gate ... <b>ok</b>
+test workspace::task_selection ... <b>ok</b>
+test result: <b>ok</b>. 5 passed; 0 failed
+
+<span class="terminal-path">PS W:\dev\personal\axio-workspace&gt;</span> <i></i></code></pre>
+          </section>
+          <section class="inspector-panel plan-panel" id="panel-plan" role="tabpanel">
+            <div class="plan-heading"><div><span class="eyebrow">Progress</span><strong id="plan-title">Unify the Axio desktop</strong></div><span>4 / 6</span></div>
+            <div class="plan-meter"><i></i></div>
+            <ol><li class="done">Define the product boundary</li><li class="done">Design the unified shell</li><li class="done">Connect local task state</li><li class="done">Add review gates</li><li class="active">Verify native interactions</li><li>Prepare the release</li></ol>
+          </section>
         </aside>
       </div>
+
+      <footer class="statusbar">
+        <button type="button" data-status-action="workspace"><span class="health-dot"></span><span>Local engine</span></button>
+        <button type="button" data-status-action="workspace"><span class="fluent">&#xE8B7;</span><span id="status-worktree">unify-desktop</span></button>
+        <span><span class="fluent">&#xE8CE;</span><span id="branch-name">main</span></span>
+        <div class="status-spacer" data-tauri-drag-region></div>
+        <button type="button" data-status-action="agents"><span class="fluent">&#xE716;</span><span id="status-agents">2 agents</span></button>
+        <button type="button" data-status-action="terminal"><span class="fluent">&#xE9D9;</span><span>5 checks passed</span></button>
+        <span class="status-local">Local only</span>
+      </footer>
     </div>
+
+    <dialog id="new-task-dialog" class="modal">
+      <form method="dialog">
+        <header><div><span class="axio-mark">A</span><div><strong>Start a task</strong><p>Create a deliberate boundary for the work.</p></div></div><button class="icon-button fluent" value="cancel" aria-label="Close">&#xE8BB;</button></header>
+        <label>Outcome<textarea id="new-task-prompt" rows="4" placeholder="What should the agents deliver?"></textarea></label>
+        <div class="modal-grid"><label>Repository<select><option>axio</option><option>rabbitfish</option></select></label><label>Worktree<select><option>Create an isolated worktree</option><option>Use main</option></select></label></div>
+        <fieldset><legend>Agents</legend><label><input type="checkbox" checked><span class="agent-badge cyan">C</span> Codex</label><label><input type="checkbox" checked><span class="agent-badge amber">C</span> Claude Code</label><label><input type="checkbox"><span class="agent-badge violet">O</span> OpenCode</label></fieldset>
+        <footer><button class="secondary-button" value="cancel">Cancel</button><button id="create-task" class="primary-button" value="default">Create task</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="modal settings-modal">
+      <form method="dialog">
+        <header><div><span class="fluent modal-symbol">&#xE713;</span><div><strong>Appearance</strong><p>Tune the workspace without restarting Axio.</p></div></div><button class="icon-button fluent" value="close" aria-label="Close">&#xE8BB;</button></header>
+        <label class="setting-row"><span><strong>Reduced motion</strong><small>Disable ambient and entrance animation</small></span><input id="reduce-motion" type="checkbox" role="switch"></label>
+        <label class="setting-row"><span><strong>Compact timeline</strong><small>Fit more agent activity on screen</small></span><input id="compact-density" type="checkbox" role="switch"></label>
+        <label class="setting-slider"><span><strong>Glass intensity</strong><small id="glass-value">72%</small></span><input id="glass-intensity" type="range" min="30" max="100" value="72"></label>
+        <footer><button class="primary-button" value="close">Done</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="command-palette" class="palette">
+      <form method="dialog">
+        <label><span class="fluent">&#xE721;</span><input id="palette-search" type="search" placeholder="Switch task or run a command…"><kbd>Esc</kbd></label>
+        <div class="palette-section" data-palette-tasks><span>Tasks</span></div>
+        <div class="palette-section"><span>Commands</span><button value="focus"><i class="fluent command-icon">&#xE740;</i><span><strong>Toggle focus mode</strong><small>Hide workspace context and inspector</small></span><kbd>Ctrl ⇧ F</kbd></button><button value="review"><i class="fluent command-icon">&#xE8A1;</i><span><strong>Open review</strong><small>Inspect the current local changes</small></span></button><button value="settings"><i class="fluent command-icon">&#xE713;</i><span><strong>Appearance settings</strong><small>Motion, density, and glass intensity</small></span></button></div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast glass-surface" role="status" aria-live="polite"></div>
     <script type="module" src="./app.js"></script>
   </body>
 </html>

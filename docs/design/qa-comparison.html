@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Axio navigation QA comparison</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 24px; background: #07090e; color: #eef1f6; font: 14px system-ui, sans-serif; }
+      header { max-width: 1500px; margin: 0 auto 18px; }
+      h1 { margin: 0 0 5px; font-size: 22px; } p { margin: 0; color: #929aa8; }
+      main { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 1500px; margin: auto; }
+      figure { margin: 0; padding: 10px; border: 1px solid rgba(255,255,255,.11); border-radius: 14px; background: rgba(255,255,255,.035); }
+      figcaption { padding: 5px 4px 12px; color: #b8c0cc; font-weight: 650; }
+      img { display: block; width: 100%; border-radius: 9px; background: #0a0d13; }
+      @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header><h1>Axio collapsed-navigation QA</h1><p>The reported dead left column compared with the corrected reactive canvas.</p></header>
+    <main>
+      <figure><figcaption>Before · redundant rail and reserved sidebar width</figcaption><img src="./axio-collapsed-navigation-before.png" alt="Axio before navigation refinement"></figure>
+      <figure><figcaption>After · two titlebar toggles and reclaimed canvas</figcaption><img src="./axio-collapsed-navigation-fixed-wide.png" alt="Axio corrected collapsed navigation"></figure>
+    </main>
+  </body>
+</html>

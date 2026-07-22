@@ -26,12 +26,14 @@ the stable product contract.
 
 ## Current foundation
 
-This first repository state contains:
+The current foundation contains:
 
-- a typed orchestration protocol;
-- an in-memory workspace state machine with tested transitions;
+- a typed task, activity, review, and agent orchestration protocol;
+- an in-memory workspace state machine with tested task and agent transitions;
 - an automation-friendly CLI status surface;
-- a minimal Tauri glass-workspace shell backed by the same Rust core;
+- a functional, responsive Tauri task workspace backed by the same Rust core;
+- a task-first timeline, collapsible workspace navigation, contextual
+  diff/output/plan inspector, native window controls, and local review gates;
 - pinned, least-privilege CI and public project policies.
 
 It intentionally does not import the previous Axio native-agent engine,
@@ -50,8 +52,13 @@ cargo run -p axio-cli -- status --json
 cargo run -p axio-desktop
 ```
 
+For a fresh computer, including the private coordination workspace and the
+optional research library, follow [new-machine setup](docs/new-machine-setup.md).
+
 See [product direction](docs/product-direction.md),
-[architecture](docs/architecture.md), and [versioning](docs/versioning.md).
+[desktop design](docs/desktop-design.md), [architecture](docs/architecture.md),
+[reference repositories](docs/reference-repositories.md), and
+[versioning](docs/versioning.md).
 
 ## Status
 
