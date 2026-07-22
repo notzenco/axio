@@ -10,10 +10,10 @@ evidence may change the solution inside an outcome.
 direction clearly states its target, context, and authority.
 
 Scope and detailed acceptance criteria are maintained in
-[`ui-improvement-plan.md`](ui-improvement-plan.md). Implement the reusable event,
-attention, composer, inspector, accessibility, and responsive primitives
-alongside real workspace data; do not let visual polish disguise or delay the
-runtime outcomes below.
+[`ui-improvement-plan.md`](ui-improvement-plan.md). The first reusable event,
+attention, composer, inspector, accessibility, and responsive primitives are
+implemented over demo state. Connect them to real workspace data without
+letting further visual polish disguise or delay the runtime outcomes below.
 
 ## Outcome: durable local workspace
 

@@ -34,6 +34,8 @@ The current foundation contains:
 - a functional, responsive Tauri task workspace backed by the same Rust core;
 - a task-first timeline, collapsible workspace navigation, contextual
   diff/output/plan inspector, native window controls, and local review gates;
+- inline task validation, explicit direction context, changed-file navigation,
+  accessible focus handling, and mutually exclusive compact overlays;
 - pinned, least-privilege CI and public project policies.
 
 It intentionally does not import the previous Axio native-agent engine,
@@ -50,6 +52,7 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli -- status --json
 cargo run -p axio-desktop
+cargo build --release -p axio-desktop --locked
 ```
 
 For a fresh computer, including the private coordination workspace and the

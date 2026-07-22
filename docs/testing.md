@@ -39,11 +39,17 @@ For any desktop change, verify in the native Tauri window:
 - non-interactive titlebar regions drag the window;
 - minimize, maximize/restore, and close behave natively;
 - workspace and context sidebars open, close, and return their width;
-- focus mode enters and exits without losing the selected task;
+- compact overlays are mutually exclusive, contain focus, close with Escape or
+  the scrim, and restore focus to their invoker;
+- focus mode enters/exits, clears hidden-panel semantics, and restores the
+  previous layout without losing the selected task;
 - task/worktree selection updates the timeline;
 - agent lifecycle buttons show valid transitions and errors;
-- task creation, directions, and review decisions update through Tauri IPC;
-- command palette and keyboard shortcuts work;
+- task creation keeps invalid/recoverable errors in the dialog, while valid
+  creation, directions, and review decisions update through Tauri IPC;
+- review entry points open one decision surface with distinct Return with
+  feedback and Approve review actions;
+- command palette, no-results recovery, and keyboard shortcuts work;
 - settings persist appearance without breaking reduced-motion behavior;
 - compact layout has no horizontal overflow or unreachable controls.
 
@@ -55,8 +61,9 @@ not use the preview as evidence for native IPC.
 The current design baseline has been inspected at:
 
 - 1440 x 900 desktop;
-- 839 x 912 compact desktop;
-- 390 x 780 narrow/mobile-like viewport.
+- 960 x 720 medium overlay layout;
+- 720 x 900 supported compact minimum;
+- 360 x 800 browser-only narrow stress test.
 
 New layouts should cover at least one wide, one threshold-adjacent, and one
 narrow viewport. Test combined states such as both sidebars closed and the
@@ -64,7 +71,7 @@ context inspector overlaying a narrow task.
 
 ## Evidence
 
-Focused visual evidence belongs in `docs/design/`. The latest navigation QA is
+Focused visual evidence belongs in `docs/design/`. The latest audited UI QA is
 [`../design-qa.md`](../design-qa.md). Evidence must identify source image,
 implementation viewport, interaction state, findings, and final pass/fail.
 

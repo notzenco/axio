@@ -73,7 +73,9 @@ Changes to current behavior update
 [`status-and-direction.md`](status-and-direction.md). New intended outcomes
 update [`product-plan.md`](product-plan.md). A choice that constrains future
 work adds or supersedes an entry in [`decisions.md`](decisions.md). User-visible
-changes update [`../CHANGELOG.md`](../CHANGELOG.md).
+changes update [`../CHANGELOG.md`](../CHANGELOG.md). Desktop interaction or
+visual changes also update [`testing.md`](testing.md), the relevant design
+contract, and [`../design-qa.md`](../design-qa.md) with matched evidence.
 
 ## Git practice
 

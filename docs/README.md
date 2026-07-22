@@ -19,13 +19,12 @@ workspace are historical evidence, not current instructions.
 
 - [`desktop-design.md`](desktop-design.md) — information architecture,
   interaction contract, responsive behavior, and visual system.
-- [`ui-improvement-plan.md`](ui-improvement-plan.md) — prioritized next UI
-  refinement with acceptance criteria, motion, responsive, and accessibility
-  rules.
-- [`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md) — screenshot-backed UX,
-  responsive, and accessibility audit to resolve before runtime implementation.
-- [`ui-audit-implementation.md`](ui-audit-implementation.md) — committed scope,
-  non-goals, and acceptance criteria for the audited interface pass.
+- [`ui-improvement-plan.md`](ui-improvement-plan.md) — implemented UI
+  foundations, remaining refinements, and acceptance criteria.
+- [`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md) — original
+  screenshot-backed findings plus the completed implementation follow-up.
+- [`ui-audit-implementation.md`](ui-audit-implementation.md) — completed scope,
+  non-goals, acceptance criteria, and implementation commit.
 - [`design/`](design/) — implementation screenshots and visual QA evidence.
 - [`decisions.md`](decisions.md) — settled architectural and product decisions.
 - [`reference-repositories.md`](reference-repositories.md) — all external
@@ -50,7 +49,8 @@ workspace are historical evidence, not current instructions.
 - [`../CHANGELOG.md`](../CHANGELOG.md) — user-visible changes by release state.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations.
 - [`../SECURITY.md`](../SECURITY.md) — private vulnerability reporting.
-- [`../design-qa.md`](../design-qa.md) — latest focused desktop comparison.
+- [`../design-qa.md`](../design-qa.md) — latest audited desktop interaction and
+  responsive verification.
 
 ## Currency rule
 

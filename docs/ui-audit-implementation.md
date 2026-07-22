@@ -4,6 +4,8 @@ Date: 2026-07-22
 Baseline: `cfbeafb` (`fix(desktop): align controls and record UI audit`)  
 Source audit: [`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md)
 
+Status: completed in `ad62db2` (`feat(desktop): resolve audited UI interactions`).
+
 ## Goal
 
 Turn the audited desktop prototype into a clear, coherent interaction model before
@@ -61,4 +63,3 @@ The pass is complete when:
 5. `cargo fmt --all -- --check`, workspace Clippy, and workspace tests pass.
 6. `cargo build --release -p axio-desktop --locked` succeeds.
 7. Updated screenshots and a concise result are recorded in `design-qa.md`.
-

@@ -37,7 +37,8 @@ Install:
 - Git;
 - the stable Rust toolchain through `rustup`;
 - the platform-specific [Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/);
-- Node.js for the website check in the private workspace.
+- Node.js for the desktop JavaScript syntax check and, in the private
+  workspace, the website check.
 
 Axio's current desktop frontend is shipped directly from
 `apps/axio-desktop/ui`; it does not require a JavaScript package install.
@@ -52,6 +53,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli -- status --json
+node --check apps\axio-desktop\ui\app.js
 cargo build --release -p axio-desktop --locked
 ```
 
