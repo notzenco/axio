@@ -1,69 +1,61 @@
-# Axio collapsed-navigation design QA
+# Axio titlebar controls design QA
 
 ## Evidence
 
-- Source visual truth: `docs/design/axio-collapsed-navigation-before.png`
-- Implementation screenshot: `docs/design/axio-collapsed-navigation-fixed-wide.png`
-- Combined comparison: `docs/design/qa-comparison.html`
-- State: left workspace sidebar closed, right context sidebar closed
-- Viewport: 1440 x 900 CSS pixels
-- Source pixels: 1440 x 900
-- Implementation pixels: 1440 x 900
-- Density normalization: 1:1 pixel and viewport comparison; no scaling
+- Source visual truth: `docs/design/axio-titlebar-source-1440x900.png`
+- Implementation screenshot: `docs/design/axio-titlebar-fixed-1440x900.png`
+- Full-view comparison: `docs/design/axio-titlebar-full-comparison.png`
+- Focused titlebar comparison: `docs/design/axio-titlebar-focused-comparison.png`
+- Viewport and state: dark desktop workspace at 1440 x 900 CSS pixels with both side panels open
+- Source pixels: 1829 x 1200; the 1441 x 901 Axio window was cropped and normalized to 1440 x 900
+- Implementation pixels: 1440 x 900 at device scale factor 1
 
 ## Findings
 
-No actionable P0, P1, or P2 differences remain for the requested navigation
-change.
+No actionable P0, P1, or P2 differences remain for the requested titlebar fix.
 
-- The redundant five-button navigation rail is removed.
-- Workspace navigation is controlled by the existing titlebar menu button.
-- Diff, output, and plan share one context-sidebar toggle and remain available
-  as tabs after the sidebar opens.
-- The simultaneous closed state resolves to `0px 1398px 0px` at the desktop
-  comparison viewport, so the task canvas reclaims the former sidebar tracks.
-- At 839 x 912 the same state resolves to `0px 811px`, with the task canvas
-  beginning at 19px rather than retaining the old sidebar column.
-- At 390 x 780 both titlebar toggles remain available and document width stays
-  at 390px with no horizontal overflow.
+- The minimize, maximize, and close controls now occupy the final titlebar grid
+  track instead of leaving an empty fixed-width track on their right.
+- At 1440 pixels, the controls end at x=1439 against the app shell's one-pixel
+  border. The measured trailing gap is exactly 1px.
+- The same 1px trailing border is preserved at 1180, 960, 720, and 480 pixel
+  viewports, with document width equal to viewport width at every breakpoint.
 
 ## Fidelity surfaces
 
-- Typography: unchanged from the approved glass shell; hierarchy and wrapping
-  remain stable after the navigation removal.
-- Spacing and layout rhythm: the dead left column is removed while the timeline
-  retains its centered reading width and the composer remains aligned beneath
-  it.
-- Colors and tokens: existing glass, violet active-state, cyan, amber, and
-  semantic review tokens are unchanged.
-- Image and icon quality: Segoe Fluent Icons are used for both titlebar panel
-  controls; no placeholder or handcrafted icon was introduced.
-- Copy and content: the task narrative and context labels are unchanged.
+- Typography: unchanged; the existing Inter/system stack, weights, line heights,
+  truncation, and title hierarchy match the source.
+- Spacing and layout rhythm: the unintended trailing grid track is removed;
+  all other titlebar tracks, gaps, control widths, and shell spacing are unchanged.
+- Colors and tokens: unchanged; existing glass, line, muted, hover, and close
+  states remain intact.
+- Image and icon quality: unchanged; the supplied Segoe Fluent Icons remain the
+  native-looking window-control glyphs and no image assets were introduced.
+- Copy and content: unchanged.
 
 ## Focused comparison
 
-The titlebar and left edge were inspected at full resolution because they are
-the only changed regions. The post-fix evidence shows two independent pressed
-states and no persistent rail or reserved sidebar width.
+The combined titlebar evidence shows the source Close control stopping roughly
+one control group short of the right edge. In the fixed capture, Close reaches
+the shell border. A focused comparison was necessary because the defect occupies
+only the top-right portion of the full 1440 x 900 frame.
 
 ## Interaction verification
 
-- Workspace toggle opens and closes the left sidebar.
-- Context toggle opens and closes the right sidebar and restores the last
-  selected Diff, Output, or Plan tab.
-- Review and terminal-context actions still open their corresponding context
-  tab.
+- The Minimize control resolves to one enabled button and triggers the existing
+  native-window-control path in the browser fallback.
+- `cargo test -p axio-desktop --locked` passes, covering compilation of the
+  Tauri command path used by minimize, maximize, and close.
 - Browser console: no errors or warnings.
 
 ## Comparison history
 
-1. P1 before: closing the workspace left the sidebar track reserved when the
-   inspector was also closed. Fix: added an explicit combined grid state and
-   then simplified the shell to three independent tracks.
-2. P2 before: the navigation rail duplicated workspace, review, output, plan,
-   and appearance controls. Fix: removed the rail and consolidated right-side
-   tools behind one titlebar context toggle.
-3. Post-fix: the matched 1440 x 900 side-by-side comparison shows the task
-   canvas occupying the full available frame with both sidebars closed.
+1. P1 before: the wide titlebar declared seven columns for six children, so the
+   controls occupied column six and left an empty 138px column at the right.
+2. Fix: removed the redundant `auto` column from the wide titlebar grid while
+   preserving the fixed 138px window-controls track.
+3. Post-fix: full-view and focused comparisons show the controls against the
+   right border, and pixel measurements confirm the result across all responsive
+   breakpoints.
 
 final result: passed

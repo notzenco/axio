@@ -22,6 +22,8 @@ workspace are historical evidence, not current instructions.
 - [`ui-improvement-plan.md`](ui-improvement-plan.md) — prioritized next UI
   refinement with acceptance criteria, motion, responsive, and accessibility
   rules.
+- [`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md) — screenshot-backed UX,
+  responsive, and accessibility audit to resolve before runtime implementation.
 - [`design/`](design/) — implementation screenshots and visual QA evidence.
 - [`decisions.md`](decisions.md) — settled architectural and product decisions.
 - [`reference-repositories.md`](reference-repositories.md) — all external
