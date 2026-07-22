@@ -1,0 +1,29 @@
+[workspace]
+resolver = "3"
+members = [
+    "apps/axio-cli",
+    "apps/axio-desktop/src-tauri",
+    "crates/axio-core",
+    "crates/axio-protocol",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/notzenco/axio"
+homepage = "https://axio.sh"
+
+[workspace.dependencies]
+axio-core = { path = "crates/axio-core" }
+axio-protocol = { path = "crates/axio-protocol" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unwrap_used = "deny"

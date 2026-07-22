@@ -1,0 +1,27 @@
+[package]
+name = "axio-desktop"
+description = "Native Tauri shell for the Axio agent workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "axio_desktop"
+path = "src/lib.rs"
+
+[[bin]]
+name = "axio"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+axio-core.workspace = true
+axio-protocol.workspace = true
+tauri = { version = "2", features = [] }
+
+[lints]
+workspace = true

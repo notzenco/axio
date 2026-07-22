@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0b10">
+    <title>Axio</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="window-shell">
+      <header class="titlebar" data-tauri-drag-region>
+        <div class="brand" data-tauri-drag-region>
+          <span class="brand-mark">A</span>
+          <span>axio</span>
+          <span class="version">0.0.1</span>
+        </div>
+        <div class="workspace-meta" data-tauri-drag-region>
+          <span id="project-name">axio</span>
+          <span class="separator">/</span>
+          <span id="branch-name">main</span>
+        </div>
+        <button class="icon-button" type="button" aria-label="Command palette">⌘</button>
+      </header>
+
+      <div class="workspace-grid">
+        <aside class="sidebar">
+          <button class="new-agent" type="button"><span>＋</span> New agent</button>
+          <nav aria-label="Projects">
+            <p class="eyebrow">Workspace</p>
+            <button class="project-row active" type="button">
+              <span class="project-icon">AX</span>
+              <span><strong>axio</strong><small>2 agents active</small></span>
+            </button>
+          </nav>
+          <div class="sidebar-footer">
+            <span class="local-dot"></span>
+            Local workspace
+          </div>
+        </aside>
+
+        <main class="main-stage">
+          <section class="stage-heading">
+            <div>
+              <p class="eyebrow">Agent workspace</p>
+              <h1>Build in parallel.<br>Stay in control.</h1>
+            </div>
+            <div class="summary-pill"><span id="running-count">1</span> running</div>
+          </section>
+
+          <section id="agent-grid" class="agent-grid" aria-live="polite"></section>
+
+          <form id="composer" class="composer">
+            <label for="prompt">Direct the workspace</label>
+            <textarea id="prompt" rows="2" placeholder="Ask an agent, compare approaches, or start parallel work…"></textarea>
+            <div class="composer-footer">
+              <span>axio · main · local</span>
+              <button type="submit">Send <kbd>↵</kbd></button>
+            </div>
+          </form>
+        </main>
+
+        <aside class="activity-panel">
+          <div class="panel-heading">
+            <span>Activity</span>
+            <span class="live-label">live</span>
+          </div>
+          <ol id="activity-list" class="activity-list">
+            <li><span class="activity-icon success">✓</span><div><strong>Workspace restored</strong><small>Local state · just now</small></div></li>
+            <li><span class="activity-icon">↗</span><div><strong>Codex started</strong><small>agent/workspace-foundation</small></div></li>
+            <li><span class="activity-icon attention">?</span><div><strong>Review requested</strong><small>Claude Code is waiting</small></div></li>
+          </ol>
+          <div class="principle-card">
+            <span>Local-first</span>
+            <p>Your repositories and agent processes remain under your control.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
