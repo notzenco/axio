@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { agentRuntimes, sessionsForTask, taskStateSteps } from "../src/data/task-runtime";
 import { cleanTerminalText, TerminalOutputRouter } from "../src/data/terminal-output";
+import { TerminalRenderQueue } from "../src/data/terminal-rendering";
 import type { AgentSession, TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../src/types";
 
 const task: WorkspaceTask = {
@@ -84,5 +85,50 @@ describe("task runtime projections", () => {
     dispose.forEach((unsubscribe) => unsubscribe());
     router.dispatch({ session_id: "session-0", offset: 12_000, data: [0] });
     expect(delivered[0]).toBe(1_000);
+  });
+
+  test("coalesces output and applies backpressure across 12 busy panes", () => {
+    const schedules = Array.from({ length: 12 }, () => [] as Array<() => void>);
+    const writes = Array.from({ length: 12 }, () => [] as Array<{
+      complete: () => void;
+      data: Uint8Array;
+    }>);
+    const renderers = writes.map((sessionWrites, session) => new TerminalRenderQueue(
+      (data, complete) => sessionWrites.push({ complete, data }),
+      (callback) => {
+        schedules[session].push(callback);
+        return schedules[session].length;
+      },
+      () => {},
+      64 * 1024,
+    ));
+
+    for (let event = 0; event < 200_000; event += 1) {
+      const session = event % renderers.length;
+      renderers[session].push(Uint8Array.of(event % 251));
+    }
+    schedules.forEach((callbacks) => callbacks.shift()?.());
+
+    expect(writes.flat()).toHaveLength(12);
+    writes.forEach((sessionWrites) => expect(sessionWrites[0].data.length).toBeLessThanOrEqual(64 * 1024));
+
+    for (let event = 0; event < 2_400_000; event += 1) {
+      const session = event % renderers.length;
+      renderers[session].push(Uint8Array.of(event % 251));
+    }
+    expect(schedules.flat()).toHaveLength(0);
+    writes.forEach((sessionWrites) => sessionWrites[0].complete());
+    expect(schedules.flat()).toHaveLength(12);
+    schedules.forEach((callbacks) => callbacks.shift()?.());
+
+    expect(writes.flat()).toHaveLength(24);
+    writes.forEach((sessionWrites) => {
+      const overloadWrite = sessionWrites[1].data;
+      expect(overloadWrite.length).toBeLessThan(65 * 1024);
+      expect(new TextDecoder().decode(overloadWrite.subarray(0, 80))).toContain(
+        "Output skipped while terminal was busy",
+      );
+    });
+    renderers.forEach((renderer) => renderer.dispose());
   });
 });

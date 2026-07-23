@@ -11,6 +11,7 @@ import { subscribeTerminalOutput } from "../../services/terminal-events";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
 import { TerminalInputBuffer } from "../../data/terminal-input";
 import { terminalProviderLabel } from "../../data/terminal-providers";
+import { TerminalRenderQueue } from "../../data/terminal-rendering";
 import { TerminalResizeScheduler } from "../../data/terminal-resize";
 
 interface TerminalPaneProps {
@@ -20,15 +21,15 @@ interface TerminalPaneProps {
   session: TerminalSessionSnapshot;
 }
 
-function writeOrderedEvent(
-  terminal: Terminal,
+function queueOrderedEvent(
+  renderer: TerminalRenderQueue,
   event: TerminalOutputEvent,
   nextOffset: { current: number },
 ) {
   const eventEnd = event.offset + event.data.length;
   if (eventEnd <= nextOffset.current) return;
   const start = Math.max(0, nextOffset.current - event.offset);
-  terminal.write(Uint8Array.from(start === 0 ? event.data : event.data.slice(start)));
+  renderer.push(Uint8Array.from(start === 0 ? event.data : event.data.slice(start)));
   nextOffset.current = eventEnd;
 }
 
@@ -72,6 +73,11 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     const focusTerminal = () => terminal.focus();
     container.addEventListener("pointerdown", focusTerminal);
     const encoder = new TextEncoder();
+    const renderer = new TerminalRenderQueue(
+      (data, complete) => terminal.write(data, complete),
+      (callback) => window.requestAnimationFrame(callback),
+      (frameId) => window.cancelAnimationFrame(frameId),
+    );
     const nextOffset = { current: 0 };
     const pending: TerminalOutputEvent[] = [];
     let replayReady = false;
@@ -119,7 +125,7 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     void subscribeTerminalOutput(session.id, (event) => {
       if (disposed) return;
       if (!replayReady) pending.push(event);
-      else writeOrderedEvent(terminal, event, nextOffset);
+      else queueOrderedEvent(renderer, event, nextOffset);
     }).then(
       async (dispose) => {
         if (disposed) {
@@ -130,12 +136,12 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
         const replay = await terminalOutput(session.id);
         if (replay) {
           if (replay.start_offset > 0) terminal.writeln("\x1b[2m[Earlier output was trimmed]\x1b[0m");
-          terminal.write(Uint8Array.from(replay.data));
+          renderer.push(Uint8Array.from(replay.data));
           nextOffset.current = replay.end_offset;
         }
         replayReady = true;
         pending.sort((left, right) => left.offset - right.offset);
-        for (const event of pending) writeOrderedEvent(terminal, event, nextOffset);
+        for (const event of pending) queueOrderedEvent(renderer, event, nextOffset);
       },
       (error) => {
         if (!disposed) onError(String(error));
@@ -151,6 +157,7 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
       unlisten();
       observer.disconnect();
       resizeScheduler.dispose();
+      renderer.dispose();
       container.removeEventListener("pointerdown", focusTerminal);
       inputDisposable.dispose();
       terminal.dispose();
