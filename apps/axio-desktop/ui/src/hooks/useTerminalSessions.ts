@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  applyTerminalExit,
+  reconcileTerminalSessions,
+} from "../data/terminal-sessions";
 import {
   closeTerminal,
   isNative,
@@ -12,50 +16,70 @@ import type { TerminalProvider, TerminalSessionSnapshot } from "../types";
 export function useTerminalSessions(taskId: string, onError: (message: string) => void) {
   const [sessions, setSessions] = useState<TerminalSessionSnapshot[]>([]);
   const [busy, setBusy] = useState(false);
+  const refreshVersion = useRef(0);
+  const activeTaskId = useRef(taskId);
+  activeTaskId.current = taskId;
 
   const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
     if (!isNative || !taskId) {
-      setSessions([]);
+      if (version === refreshVersion.current) setSessions([]);
       return;
     }
     try {
-      setSessions(await terminalSessions(taskId) ?? []);
+      const snapshots = await terminalSessions(taskId) ?? [];
+      if (version === refreshVersion.current) {
+        setSessions((current) => reconcileTerminalSessions(snapshots, current));
+      }
     } catch (error) {
-      onError(String(error));
+      if (version === refreshVersion.current) onError(String(error));
     }
   }, [onError, taskId]);
 
   useEffect(() => {
     setSessions([]);
-    void refresh();
+    setBusy(false);
     let disposed = false;
     let unlisten = () => {};
     void listenTerminalExit((event) => {
       if (disposed) return;
-      setSessions((current) => current.map((session) => session.id === event.session_id
-        ? { ...session, status: event.status, exit_code: event.exit_code }
-        : session));
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    });
+      setSessions((current) => applyTerminalExit(current, event));
+    }).then(
+      (dispose) => {
+        if (disposed) {
+          dispose();
+          return;
+        }
+        unlisten = dispose;
+        void refresh();
+      },
+      (error) => {
+        if (!disposed) {
+          onError(String(error));
+          void refresh();
+        }
+      },
+    );
     return () => {
       disposed = true;
+      refreshVersion.current += 1;
       unlisten();
     };
-  }, [refresh]);
+  }, [onError, refresh]);
 
   const spawn = async (provider: TerminalProvider, count: number) => {
+    const spawnTaskId = taskId;
     setBusy(true);
     try {
-      const created = await spawnTerminalInstances(provider, count, taskId);
+      const created = await spawnTerminalInstances(provider, count, spawnTaskId);
+      if (activeTaskId.current !== spawnTaskId) return false;
       if (created) setSessions((current) => [...current, ...created]);
       return Boolean(created);
     } catch (error) {
-      onError(String(error));
+      if (activeTaskId.current === spawnTaskId) onError(String(error));
       return false;
     } finally {
-      setBusy(false);
+      if (activeTaskId.current === spawnTaskId) setBusy(false);
     }
   };
 

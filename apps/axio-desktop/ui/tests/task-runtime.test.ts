@@ -7,6 +7,10 @@ import {
   TerminalReplayBuffer,
 } from "../src/data/terminal-output";
 import { TerminalRenderQueue } from "../src/data/terminal-rendering";
+import {
+  applyTerminalExit,
+  reconcileTerminalSessions,
+} from "../src/data/terminal-sessions";
 import type { AgentSession, TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../src/types";
 
 const task: WorkspaceTask = {
@@ -186,5 +190,49 @@ describe("task runtime projections", () => {
     suffix.append("abc", 2);
     suffix.append("def", 3);
     expect(suffix.drain()).toEqual({ byteCount: 5, text: "cdef" });
+  });
+
+  test("keeps terminal lifecycle state monotonic across refresh races", () => {
+    const running = sessions[0];
+    const exited = applyTerminalExit([running], {
+      session_id: running.id,
+      status: "exited",
+      exit_code: 0,
+    })[0];
+    const stopping = { ...running, status: "stopping" as const };
+    const spawnedDuringRefresh = { ...running, id: "new", ordinal: 3 };
+
+    expect(reconcileTerminalSessions([running], [exited])).toEqual([exited]);
+    expect(reconcileTerminalSessions([running], [stopping])).toEqual([stopping]);
+    expect(reconcileTerminalSessions([running], [running, spawnedDuringRefresh])).toEqual([
+      running,
+      spawnedDuringRefresh,
+    ]);
+  });
+
+  test("reconciles sustained terminal lifecycle races across the session limit", () => {
+    let current = Array.from({ length: 12 }, (_, index) => ({
+      ...sessions[0],
+      id: `session-${index}`,
+      ordinal: index + 1,
+    }));
+
+    for (let iteration = 0; iteration < 120_000; iteration += 1) {
+      const session = iteration % current.length;
+      current = applyTerminalExit(current, {
+        session_id: `session-${session}`,
+        status: iteration % 2 === 0 ? "exited" : "failed",
+        exit_code: iteration % 2,
+      });
+      const staleRunning = current.map((snapshot) => ({
+        ...snapshot,
+        status: "running" as const,
+        exit_code: undefined,
+      }));
+      current = reconcileTerminalSessions(staleRunning, current);
+    }
+
+    expect(current.every((session) => session.status === "exited" || session.status === "failed"))
+      .toBe(true);
   });
 });
