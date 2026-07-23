@@ -102,6 +102,32 @@ fn closing_a_repository_clears_repository_scoped_state() {
 }
 
 #[test]
+fn restoring_a_session_repairs_an_unknown_selected_task() {
+    let repository = RepositorySnapshot {
+        root: "C:/work/axio".to_owned(),
+        name: "axio".to_owned(),
+        branch: "main".to_owned(),
+        files: Vec::new(),
+        files_truncated: false,
+        changes: Vec::new(),
+    };
+    let snapshot = Workspace::demo().snapshot();
+    let mut session = axio_protocol::WorkspaceSession::from(&snapshot);
+    session.selected_task = "missing".to_owned();
+
+    let restored = Workspace::restore(session, repository).snapshot();
+
+    assert_eq!(restored.selected_task, "desktop");
+    assert_eq!(
+        restored
+            .repository
+            .expect("live repository metadata should be attached")
+            .root,
+        "C:/work/axio"
+    );
+}
+
+#[test]
 fn direction_and_review_are_recorded_in_the_task_narrative() {
     let mut workspace = Workspace::demo();
 

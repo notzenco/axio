@@ -6,21 +6,25 @@ reports follow [`../SECURITY.md`](../SECURITY.md).
 
 ## Current boundary
 
-The current application is local-only and uses deterministic demo state. It has
-no account, network client, agent executable launch, PTY, repository access,
-filesystem browser, credential store, updater, or hosted service.
+The current application is local-only and combines deterministic task/agent
+demo state with explicit read-only access to a user-selected Git repository. It
+has no account, network client, agent executable launch, PTY, credential store,
+updater, or hosted service.
 
 The Tauri window has:
 
 - a content security policy limited to local content and Tauri IPC;
 - `core:default` plus explicit window-drag permission;
-- seven allowlisted Rust commands;
+- a narrow allowlisted Rust command bridge for workspace persistence,
+  repository inspection, safe file reads, and window controls;
 - no shell plugin, HTTP plugin, filesystem plugin, or broad command execution;
 - UI rendering that uses DOM `textContent` for dynamic snapshot values rather
   than injecting HTML.
 
-Appearance preferences are stored in the webview's local storage. Workspace
-and activity state are process-local and disappear on exit.
+Appearance preferences are stored in the webview's local storage. Repository
+paths and repository-scoped task, agent, review, and activity state are stored
+as plaintext JSON in two recoverable generations below Axio's platform app
+configuration directory. Source repositories are never used for Axio state.
 
 ## Assets to protect
 
@@ -76,7 +80,8 @@ Linux build, and update when the upstream stack provides a compatible route.
 ## Security non-claims
 
 The current approval cards are product-flow prototypes, not a sandbox. Axio
-does not yet isolate an agent, guarantee command safety, attest outputs, or
-protect persisted history because those facilities do not exist. The local-only
-principle reduces exposure but does not replace process, path, secret, and
-release controls.
+does not yet isolate an agent, guarantee command safety, attest outputs, encrypt
+persisted history, redact credentials from user-authored directions, or enforce
+retention limits. The local-only principle and recoverable writes reduce
+exposure and data-loss risk but do not replace process, path, secret, storage,
+and release controls.

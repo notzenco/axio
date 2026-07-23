@@ -20,8 +20,9 @@ docs/                          current product and engineering documentation
 ```
 
 Product logic belongs in Rust core crates. The Tauri layer translates native
-requests and manages process-local state; it should not become a second domain
-model. UI code renders snapshots and asks the native boundary to mutate them.
+requests and commits core snapshots through the local store; it should not
+become a second domain model. UI code renders snapshots and asks the native
+boundary to mutate them.
 
 ## Daily verification
 

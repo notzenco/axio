@@ -14,6 +14,7 @@ change during `0.x`.
 - tasks;
 - the selected task ID;
 - chronological activity.
+- live repository metadata when a repository is open.
 
 An `AgentSession` has an ID, display name, connector kind, lifecycle status,
 current task text, and optional worktree label. Supported vocabulary currently
@@ -51,14 +52,27 @@ Task behavior currently supports:
 - approve a task, marking it completed;
 - reject a task, returning it to waiting.
 
-These operations only mutate the in-memory snapshot. Generated worktree labels
-do not create Git worktrees.
+Desktop operations commit repository-scoped tasks, agents, activity, review
+state, and selection through the schema-v2 local store before publishing the
+new snapshot in memory. Generated worktree labels do not create Git worktrees.
+
+`WorkspaceSession` is the persisted vocabulary separated from live repository
+metadata. Schema v1 catalogs migrate into schema v2; repositories without a
+complete saved session retain their legacy selected-task behavior and receive
+the deterministic initial state.
 
 ## Tauri command boundary
 
 The desktop exposes:
 
 - `workspace_snapshot`
+- `workspace_lifecycle`
+- `pick_workspace_folder`
+- `open_workspace`
+- `close_workspace`
+- `remove_recent_workspace`
+- `refresh_repository`
+- `read_repository_file`
 - `set_agent_status`
 - `select_task`
 - `create_task`
@@ -89,8 +103,8 @@ status API.
   become stable.
 - During `0.x`, a breaking change must update every consumer, fixture, test, and
   relevant document in one change.
-- Before persistence, connector plugins, or third-party automation ship,
-  introduce explicit schema/protocol versions and migration behavior.
+- Every persisted schema change requires explicit versioning and migration
+  coverage.
 - Do not use display strings as durable identifiers.
-- Timestamps must become structured, ordered values before activity is
-  persisted; the current human-readable strings are demo data.
+- Human-readable demo timestamps are currently persisted. They must become
+  structured, ordered values before real connector events ship.

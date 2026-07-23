@@ -22,17 +22,16 @@ exist.
 
 ## Current Rust coverage
 
-Five core unit tests verify:
+Fifteen core tests cover transition rules, task/direction/review mutations,
+repository parsing and safe reads, closed/restored state invariants, Unicode
+paths, per-repository session isolation, two-slot corruption recovery, source
+directory safety, and schema-v1-to-v2 migration. A desktop-runtime integration
+test reconstructs the runtime from disk and verifies that task creation,
+directions, reviews, agent status, and selection survive restart.
 
-- a running agent can wait and resume;
-- an invalid running-to-idle transition is rejected;
-- an unknown agent is rejected;
-- task creation selects a generated task/worktree boundary;
-- directions and review decisions appear in the task narrative.
-
-There are currently no automated tests for the CLI argument parser, Tauri
-command handlers, browser interactions, accessibility tree, persistence,
-processes, PTYs, Git, installers, or migration behavior.
+There are currently no automated tests for the CLI argument parser, browser
+interactions, accessibility tree, processes, PTYs, installers, or native
+folder-dialog behavior.
 
 ## Desktop interaction checklist
 
@@ -98,7 +97,7 @@ implementation viewport, interaction state, findings, and final pass/fail.
 Before claiming daily-workspace readiness, add:
 
 - table/property tests for every state machine;
-- snapshot and backward-compatibility tests for versioned persisted data;
+- migration fixtures for every future persisted schema version;
 - connector contract fixtures and process lifecycle integration tests;
 - PTY load, cancellation, resize, and backpressure tests;
 - disposable-repository Git/worktree/review integration tests;

@@ -141,6 +141,26 @@ pub struct WorkspaceSnapshot {
     pub repository: Option<RepositorySnapshot>,
 }
 
+/// Repository-scoped state restored independently from live Git metadata.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkspaceSession {
+    pub agents: Vec<AgentSession>,
+    pub tasks: Vec<WorkspaceTask>,
+    pub selected_task: String,
+    pub activity: Vec<WorkspaceActivity>,
+}
+
+impl From<&WorkspaceSnapshot> for WorkspaceSession {
+    fn from(snapshot: &WorkspaceSnapshot) -> Self {
+        Self {
+            agents: snapshot.agents.clone(),
+            tasks: snapshot.tasks.clone(),
+            selected_task: snapshot.selected_task.clone(),
+            activity: snapshot.activity.clone(),
+        }
+    }
+}
+
 /// The desktop workspace plus its durable local repository history.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkspaceLifecycleSnapshot {
