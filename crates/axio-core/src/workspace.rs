@@ -69,6 +69,8 @@ impl Workspace {
             task.changed_files = u32::try_from(repository.changes.len()).unwrap_or(u32::MAX);
             if task.changed_files > 0 {
                 task.review = ReviewStatus::Pending;
+            } else if task.review == ReviewStatus::Pending {
+                task.review = ReviewStatus::None;
             }
         }
         self.snapshot.repository = Some(repository);

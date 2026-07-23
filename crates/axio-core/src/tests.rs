@@ -86,6 +86,36 @@ fn repository_metadata_enriches_the_selected_task() {
 }
 
 #[test]
+fn clean_repository_clears_only_a_pending_review() {
+    let mut workspace = Workspace::demo();
+    let clean_repository = RepositorySnapshot {
+        root: "C:/work/axio".to_owned(),
+        name: "axio".to_owned(),
+        branch: "main".to_owned(),
+        files: vec!["Cargo.toml".to_owned()],
+        files_truncated: false,
+        changes: Vec::new(),
+    };
+
+    workspace.attach_repository(clean_repository.clone());
+    assert_eq!(workspace.snapshot().tasks[0].review, ReviewStatus::None);
+
+    let mut changed_repository = clean_repository.clone();
+    changed_repository.changes.push(RepositoryChange {
+        path: "Cargo.toml".to_owned(),
+        status: "M".to_owned(),
+        additions: Some(1),
+        deletions: Some(0),
+    });
+    workspace.attach_repository(changed_repository);
+    workspace
+        .review_task("desktop", true)
+        .expect("pending review should be decidable");
+    workspace.attach_repository(clean_repository);
+    assert_eq!(workspace.snapshot().tasks[0].review, ReviewStatus::Approved);
+}
+
+#[test]
 fn closing_a_repository_clears_repository_scoped_state() {
     let mut workspace = Workspace::demo();
 
