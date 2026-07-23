@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { agentRuntimes, sessionsForTask, taskStateSteps } from "../src/data/task-runtime";
-import { cleanTerminalText } from "../src/data/terminal-output";
+import { cleanTerminalText, TerminalOutputRouter } from "../src/data/terminal-output";
 import type { AgentSession, TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../src/types";
 
 const task: WorkspaceTask = {
@@ -62,5 +62,27 @@ describe("task runtime projections", () => {
 
   test("removes terminal control sequences without hiding captured text", () => {
     expect(cleanTerminalText("\u001b[2J\u001b[31mhello\u001b[0m\rworld\u0000")).toBe("hello\nworld");
+  });
+
+  test("routes sustained output directly across the full session limit", () => {
+    const router = new TerminalOutputRouter();
+    const delivered = Array.from({ length: 12 }, () => 0);
+    const dispose = delivered.map((_, index) => router.subscribe(`session-${index}`, () => {
+      delivered[index] += 1;
+    }));
+
+    for (let index = 0; index < 12_000; index += 1) {
+      const session = index % delivered.length;
+      router.dispatch({
+        session_id: `session-${session}`,
+        offset: index,
+        data: [index % 256],
+      });
+    }
+
+    expect(delivered).toEqual(Array.from({ length: 12 }, () => 1_000));
+    dispose.forEach((unsubscribe) => unsubscribe());
+    router.dispatch({ session_id: "session-0", offset: 12_000, data: [0] });
+    expect(delivered[0]).toBe(1_000);
   });
 });

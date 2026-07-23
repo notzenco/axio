@@ -3,11 +3,11 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useEffect, useRef } from "react";
 import {
-  listenTerminalOutput,
   resizeTerminal,
   terminalOutput,
   writeTerminalInput,
 } from "../../services/tauri";
+import { subscribeTerminalOutput } from "../../services/terminal-events";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
 import { terminalProviderLabel } from "../../data/terminal-providers";
 
@@ -22,12 +22,11 @@ function writeOrderedEvent(
   terminal: Terminal,
   event: TerminalOutputEvent,
   nextOffset: { current: number },
-  afterWrite?: () => void,
 ) {
   const eventEnd = event.offset + event.data.length;
   if (eventEnd <= nextOffset.current) return;
   const start = Math.max(0, nextOffset.current - event.offset);
-  terminal.write(Uint8Array.from(event.data.slice(start)), afterWrite);
+  terminal.write(Uint8Array.from(event.data.slice(start)));
   nextOffset.current = eventEnd;
 }
 
@@ -76,7 +75,6 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     let replayReady = false;
     let disposed = false;
     let unlisten = () => {};
-    let refreshFrame = 0;
     let inputTimer = 0;
     let inputBuffer: number[] = [];
     const flushInput = () => {
@@ -85,12 +83,6 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
       const data = Uint8Array.from(inputBuffer);
       inputBuffer = [];
       void writeTerminalInput(session.id, data)?.catch((error) => onError(String(error)));
-    };
-    const refreshAfterPaint = () => {
-      cancelAnimationFrame(refreshFrame);
-      refreshFrame = requestAnimationFrame(() => {
-        if (!disposed) terminal.refresh(0, terminal.rows - 1);
-      });
     };
 
     const inputDisposable = terminal.onData((data) => {
@@ -108,40 +100,38 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     });
     observer.observe(container);
 
-    void listenTerminalOutput((event) => {
-      if (disposed || event.session_id !== session.id) return;
+    void subscribeTerminalOutput(session.id, (event) => {
+      if (disposed) return;
       if (!replayReady) pending.push(event);
-      else {
-        writeOrderedEvent(terminal, event, nextOffset, refreshAfterPaint);
-      }
-    }).then(async (dispose) => {
-      if (disposed) {
-        dispose();
-        return;
-      }
-      unlisten = dispose;
-      try {
+      else writeOrderedEvent(terminal, event, nextOffset);
+    }).then(
+      async (dispose) => {
+        if (disposed) {
+          dispose();
+          return;
+        }
+        unlisten = dispose;
         const replay = await terminalOutput(session.id);
         if (replay) {
           if (replay.start_offset > 0) terminal.writeln("\x1b[2m[Earlier output was trimmed]\x1b[0m");
-          terminal.write(Uint8Array.from(replay.data), refreshAfterPaint);
+          terminal.write(Uint8Array.from(replay.data));
           nextOffset.current = replay.end_offset;
         }
         replayReady = true;
         pending.sort((left, right) => left.offset - right.offset);
-        for (const event of pending) writeOrderedEvent(terminal, event, nextOffset, refreshAfterPaint);
-        terminal.focus();
-        refreshAfterPaint();
-      } catch (error) {
-        onError(String(error));
-      }
+        for (const event of pending) writeOrderedEvent(terminal, event, nextOffset);
+      },
+      (error) => {
+        if (!disposed) onError(String(error));
+      },
+    ).catch((error) => {
+      if (!disposed) onError(String(error));
     });
 
     return () => {
       clearTimeout(inputTimer);
       flushInput();
       disposed = true;
-      cancelAnimationFrame(refreshFrame);
       unlisten();
       observer.disconnect();
       container.removeEventListener("pointerdown", focusTerminal);
