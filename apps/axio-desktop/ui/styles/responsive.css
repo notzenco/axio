@@ -16,7 +16,6 @@
   .titlebar { grid-template-columns: 32px 72px minmax(100px,130px) minmax(140px,1fr) auto 108px; }
   .text-button span:last-child { display: none; }
   .window-controls { grid-template-columns: repeat(3,36px); }
-  .task-actions .quiet-button { display: none; }
   body.sidebar-hidden .workspace-shell, body.sidebar-hidden.inspector-hidden .workspace-shell { grid-template-columns: 0 minmax(0,1fr); }
   body.inspector-hidden .workspace-shell { grid-template-columns: min(var(--sidebar-width),210px) minmax(0,1fr); }
   .file-change { grid-template-columns: minmax(120px,1fr) 26px 26px; }
@@ -36,7 +35,7 @@
   .inspector { z-index: 16; top: 5px; right: 5px; bottom: 5px; width: calc(100% - 10px); }
   .panel-resize-handle { display: none; }
   .task-header { padding: 17px 15px 14px; }
-  .task-actions { display: none; }
+  .workspace-toolbar button { padding-inline: 8px; }
   .timeline, .composer { width: calc(100% - 20px); }
   .timeline { padding-left: 15px; }
   .send-hint { display: none; }
@@ -59,6 +58,9 @@
   .window-controls { grid-template-columns: repeat(3,31px); }
   .command-trigger kbd { display: none; }
   .task-kicker #task-worktree, .task-kicker span:nth-last-child(2) { display: none; }
+  .workspace-toolbar button span { display: none; }
+  .workspace-toolbar button { width: 32px; padding: 0; justify-content: center; }
+  .workspace-toolbar button b { position: absolute; top: -3px; right: -3px; min-width: 14px; height: 14px; padding: 0 3px; font-size: 7px; }
   .composer { padding-inline: 10px; }
   .audience-button { max-width: 106px; }
   .statusbar button:nth-of-type(2) { display: none; }

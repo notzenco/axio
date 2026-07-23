@@ -1,4 +1,5 @@
 import type { AgentSession, WorkspaceSnapshot, WorkspaceTask } from "../types";
+import { Add20Regular, ChevronDown12Regular } from "@fluentui/react-icons";
 import { panelSizeLimits } from "../hooks/usePanelSizes";
 import { PanelResizeHandle } from "./PanelResizeHandle";
 
@@ -31,7 +32,7 @@ export function Sidebar({ onNewTask, onNotify, onPanelChange, onResize, onSelect
       <PanelResizeHandle label="Resize workspace panel" side="left" min={panelSizeLimits.workspace.min} max={panelSizeLimits.workspace.max} value={width} onChange={onResize} onReset={() => onResize(panelSizeLimits.workspace.default)} />
       <header className="sidebar-header">
         <div><span className="eyebrow">Workspace</span><strong>Command centre</strong></div>
-        <button id="new-task" className="icon-button fluent" type="button" aria-label="New task" title="New task" onClick={onNewTask}>&#xE710;</button>
+        <button id="new-task" className="icon-button" type="button" aria-label="New task" title="New task" onClick={onNewTask}><Add20Regular /></button>
       </header>
       <div className="sidebar-tabs" role="tablist" aria-label="Workspace context">
         {(["tasks", "agents"] as const).map((name) => <button key={name} className={panel === name ? "active" : ""} type="button" role="tab" aria-selected={panel === name} onClick={() => onPanelChange(name)}>{name === "tasks" ? "Tasks" : "Agents"}</button>)}
@@ -41,7 +42,7 @@ export function Sidebar({ onNewTask, onNotify, onPanelChange, onResize, onSelect
           {snapshot.tasks.map((task) => <TaskRow key={task.id} task={task} selected={task.id === snapshot.selected_task} onSelect={() => onSelectTask(task.id)} />)}
         </div>
         <details className="context-disclosure">
-          <summary><span>Worktrees</span><span>{snapshot.tasks.length + 1}</span></summary>
+          <summary><span>Worktrees</span><span>{snapshot.tasks.length + 1}</span><ChevronDown12Regular /></summary>
           <div className="worktree-list">
             {snapshot.tasks.map((task) => {
               const selected = task.id === snapshot.selected_task;

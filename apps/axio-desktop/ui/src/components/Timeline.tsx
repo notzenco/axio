@@ -1,12 +1,13 @@
+import { Checkmark16Regular, DocumentEdit20Regular, WindowConsole20Regular } from "@fluentui/react-icons";
 import type { AgentSession, WorkspaceActivity, WorkspaceSnapshot, WorkspaceTask } from "../types";
 
 const colorFor = (agent?: AgentSession) => agent?.kind === "codex" ? "cyan" : agent?.kind === "claude_code" ? "amber" : "violet";
 
 function ActivityDetail({ activity, onReview, task }: { activity: WorkspaceActivity; onReview: () => void; task: WorkspaceTask }) {
-  if (activity.kind === "tool") return <div className="tool-call"><span className="fluent"></span><span>{activity.detail ?? "Local command"}</span><b>✓</b></div>;
+  if (activity.kind === "tool") return <div className="tool-call"><WindowConsole20Regular /><span>{activity.detail ?? "Local command"}</span><b><Checkmark16Regular /></b></div>;
   if (activity.kind === "change") return (
     <div className="change-summary" title={activity.detail ?? undefined}>
-      <div className="change-heading"><span className="fluent"></span><strong>Files changed</strong><b>{task.changed_files}</b><span className="diff-total">local worktree</span></div>
+      <div className="change-heading"><DocumentEdit20Regular /><strong>Files changed</strong><b>{task.changed_files}</b><span className="diff-total">local worktree</span></div>
       {["ui/src/App.tsx", "ui/src/components/TaskCanvas.tsx", "ui/styles/task.css"].slice(0, Math.max(1, task.changed_files)).map((path) => <div className="file-change" key={path}><code>{path}</code><span className="add">+</span><span className="remove">−</span><i className="diff-bar"></i></div>)}
     </div>
   );

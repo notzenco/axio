@@ -5,8 +5,8 @@ export function matchesSetting(query: string, ...terms: string[]) {
   return !normalized || terms.some((term) => term.toLowerCase().includes(normalized));
 }
 
-export function SettingSection({ children, description, icon, title }: { children: ReactNode; description: string; icon: string; title: string }) {
-  return <section className="settings-section"><header><span className="fluent settings-section-icon">{icon}</span><div><h2>{title}</h2><p>{description}</p></div></header><div className="settings-section-body">{children}</div></section>;
+export function SettingSection({ children, description, icon, title }: { children: ReactNode; description: string; icon: ReactNode; title: string }) {
+  return <section className="settings-section"><header><span className="settings-section-icon">{icon}</span><div><h2>{title}</h2><p>{description}</p></div></header><div className="settings-section-body">{children}</div></section>;
 }
 
 export function SettingSwitch({ checked, description, label, onChange }: { checked: boolean; description: string; label: string; onChange: (checked: boolean) => void }) {

@@ -1,4 +1,13 @@
 import type { PointerEvent } from "react";
+import {
+  ChevronDown12Regular,
+  Dismiss20Regular,
+  Maximize20Regular,
+  Navigation20Regular,
+  Search20Regular,
+  Settings20Regular,
+  Subtract20Regular,
+} from "@fluentui/react-icons";
 import type { LayoutController } from "../hooks/useLayout";
 import { runWindowAction, startWindowDrag } from "../services/tauri";
 
@@ -33,7 +42,7 @@ export function Titlebar({ layout, notify, onOpenPalette, onOpenSettings, projec
     <header className="titlebar" data-tauri-drag-region onPointerDown={onDrag}>
       <button
         id="sidebar-toggle"
-        className="icon-button fluent"
+        className="icon-button"
         type="button"
         aria-label={layout.sidebarOpen ? "Close workspace sidebar" : "Open workspace sidebar"}
         title={layout.focusMode ? "Exit focus mode to open the workspace sidebar" : undefined}
@@ -42,29 +51,22 @@ export function Titlebar({ layout, notify, onOpenPalette, onOpenSettings, projec
           if (layout.focusMode) layout.setFocusMode(false);
           layout.setSidebarOpen(!layout.sidebarOpen || layout.focusMode);
         }}
-      >&#xE700;</button>
+      ><Navigation20Regular /></button>
       <div className="wordmark" data-tauri-drag-region><span className="axio-mark">A</span><span>Axio</span></div>
       <button className="project-pill" type="button" onClick={onOpenPalette}>
-        <span className="project-light"></span><span id="project-name">{project}</span><span className="fluent mini-icon">&#xE70D;</span>
+        <span className="project-light"></span><span id="project-name">{project}</span><ChevronDown12Regular />
       </button>
       <button className="command-trigger" type="button" onClick={onOpenPalette}>
-        <span className="fluent">&#xE721;</span><span>Switch task or run a command</span><kbd>Ctrl K</kbd>
+        <Search20Regular /><span>Switch task or run a command</span><kbd>Ctrl K</kbd>
       </button>
       <div className="titlebar-actions">
         <span className="local-pill"><i></i> Local</span>
-        <button id="focus-toggle" className="text-button" type="button" aria-label={layout.focusMode ? "Exit focus mode" : "Enter focus mode"} aria-pressed={layout.focusMode} onClick={() => layout.setFocusMode(!layout.focusMode)}>
-          <span className="fluent">&#xE740;</span><span>{layout.focusMode ? "Exit focus mode" : "Focus"}</span>
-        </button>
-        <button id="inspector-toggle" className="icon-button fluent" type="button" aria-label={layout.inspectorOpen ? "Hide context dock" : "Open context dock"} aria-pressed={layout.inspectorOpen && !layout.focusMode} onClick={() => {
-          if (layout.focusMode) layout.setFocusMode(false);
-          layout.setInspectorOpen(!layout.inspectorOpen || layout.focusMode);
-        }}>&#xE8A0;</button>
-        <button id="settings-button" className="icon-button fluent" type="button" aria-label="Settings" title="Settings" onClick={onOpenSettings}>&#xE713;</button>
+        <button id="settings-button" className="icon-button" type="button" aria-label="Settings" title="Settings" onClick={onOpenSettings}><Settings20Regular /></button>
       </div>
       <div className="window-controls">
-        <button className="fluent" type="button" onClick={() => onWindowAction("minimize")} aria-label="Minimize">&#xE921;</button>
-        <button className="fluent" type="button" onClick={() => onWindowAction("maximize")} aria-label="Maximize">&#xE922;</button>
-        <button className="fluent window-close" type="button" onClick={() => onWindowAction("close")} aria-label="Close">&#xE8BB;</button>
+        <button type="button" onClick={() => onWindowAction("minimize")} aria-label="Minimize"><Subtract20Regular /></button>
+        <button type="button" onClick={() => onWindowAction("maximize")} aria-label="Maximize"><Maximize20Regular /></button>
+        <button className="window-close" type="button" onClick={() => onWindowAction("close")} aria-label="Close"><Dismiss20Regular /></button>
       </div>
     </header>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ContextPanel } from "../types";
 
 export type AccentColor = "violet" | "cyan" | "amber";
 export type DefaultAudience = "all" | "first-agent";
@@ -20,8 +21,11 @@ export interface AppSettings {
   };
   workspace: {
     autoOpenReview: boolean;
+    defaultContextPanel: ContextPanel;
     inspectorOnLaunch: boolean;
+    showReviewBadge: boolean;
     showStatusBar: boolean;
+    showToolbarLabels: boolean;
     sidebarOnLaunch: boolean;
   };
 }
@@ -30,7 +34,15 @@ export const defaultSettings: AppSettings = {
   accessibility: { highContrast: false, largerControls: false, reduceMotion: false },
   appearance: { accent: "violet", compactTimeline: false, glass: 72 },
   composer: { defaultAudience: "all", sendOnEnter: true },
-  workspace: { autoOpenReview: true, inspectorOnLaunch: false, showStatusBar: true, sidebarOnLaunch: true },
+  workspace: {
+    autoOpenReview: true,
+    defaultContextPanel: "diff",
+    inspectorOnLaunch: false,
+    showReviewBadge: true,
+    showStatusBar: true,
+    showToolbarLabels: true,
+    sidebarOnLaunch: true,
+  },
 };
 
 const STORAGE_KEY = "axio-settings-v1";
@@ -78,6 +90,7 @@ export function useSettings() {
     document.body.classList.toggle("high-contrast", settings.accessibility.highContrast);
     document.body.classList.toggle("larger-controls", settings.accessibility.largerControls);
     document.body.classList.toggle("statusbar-hidden", !settings.workspace.showStatusBar);
+    document.body.classList.toggle("toolbar-labels-hidden", !settings.workspace.showToolbarLabels);
     document.documentElement.style.setProperty("--glass-alpha", String(settings.appearance.glass / 100));
     document.documentElement.style.setProperty("--violet", accent);
     document.documentElement.style.setProperty("--violet-strong", accentStrong);

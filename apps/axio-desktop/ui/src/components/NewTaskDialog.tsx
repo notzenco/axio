@@ -1,3 +1,4 @@
+import { Dismiss20Regular, Warning20Regular } from "@fluentui/react-icons";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLightDismiss } from "../hooks/useLightDismiss";
 
@@ -98,7 +99,7 @@ export function NewTaskDialog({ onClose, onCreate, open }: NewTaskDialogProps) {
     <>
       <dialog id="new-task-dialog" className="modal" ref={dialogRef}>
         <form noValidate onSubmit={submit}>
-          <header><div><span className="axio-mark">A</span><div><strong>Start a task</strong><p>Create a deliberate boundary for the work.</p></div></div><button className="icon-button fluent" type="button" onClick={requestClose} aria-label="Close">&#xE8BB;</button></header>
+          <header><div><span className="axio-mark">A</span><div><strong>Start a task</strong><p>Create a deliberate boundary for the work.</p></div></div><button className="icon-button" type="button" onClick={requestClose} aria-label="Close"><Dismiss20Regular /></button></header>
           <label>Outcome<textarea ref={inputRef} rows={4} placeholder="What should the agents deliver?" aria-describedby="new-task-error" aria-invalid={Boolean(error)} value={draft.prompt} onChange={(event) => { setDraft({ ...draft, prompt: event.target.value }); if (event.target.value.trim()) setError(""); }} required></textarea></label>
           <p id="new-task-error" className="field-error" role="alert" hidden={!error}>{error}</p>
           <div className="modal-grid">
@@ -115,7 +116,7 @@ export function NewTaskDialog({ onClose, onCreate, open }: NewTaskDialogProps) {
       </dialog>
       <dialog id="discard-changes-dialog" className="modal confirmation-modal" aria-labelledby="discard-changes-title" aria-describedby="discard-changes-description" ref={discardRef}>
         <form method="dialog" onSubmit={(event) => event.preventDefault()}>
-          <header><div><span className="fluent modal-symbol warning-symbol">&#xE7BA;</span><div><strong id="discard-changes-title">Discard changes?</strong><p>Your task setup has not been saved.</p></div></div><button className="icon-button fluent" type="button" onClick={() => setConfirmOpen(false)} aria-label="Keep editing">&#xE8BB;</button></header>
+          <header><div><span className="modal-symbol warning-symbol"><Warning20Regular /></span><div><strong id="discard-changes-title">Discard changes?</strong><p>Your task setup has not been saved.</p></div></div><button className="icon-button" type="button" onClick={() => setConfirmOpen(false)} aria-label="Keep editing"><Dismiss20Regular /></button></header>
           <p id="discard-changes-description" className="confirmation-copy">If you leave now, the outcome and task options you changed will be lost.</p>
           <footer><button className="secondary-button" type="button" autoFocus onClick={() => setConfirmOpen(false)}>Keep editing</button><button className="danger-button" type="button" onClick={discard}>Discard changes</button></footer>
         </form>

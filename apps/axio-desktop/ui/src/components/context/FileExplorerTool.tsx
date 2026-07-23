@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
+import { Code20Regular, Document20Regular, Folder20Regular, Search20Regular } from "@fluentui/react-icons";
 
 const files = [
   { depth: 0, folder: true, name: "apps", path: "apps" },
@@ -19,9 +20,9 @@ export function FileExplorerTool({ active }: { active: boolean }) {
 
   return (
     <section className={`inspector-panel files-panel${active ? " active" : ""}`} id="panel-files" role="tabpanel">
-      <label className="file-search"><span className="fluent">&#xE721;</span><input type="search" placeholder="Filter files" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+      <label className="file-search"><Search20Regular /><input type="search" placeholder="Filter files" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
       <div className="file-tree" role="tree" aria-label="Workspace files">
-        {visible.map((entry) => <button key={entry.path} type="button" role="treeitem" aria-selected={!entry.folder && selected === entry.path} className={selected === entry.path ? "active" : ""} style={{ "--tree-depth": entry.depth } as React.CSSProperties} onClick={() => !entry.folder && setSelected(entry.path)}><span className="fluent">{entry.folder ? "" : ""}</span><span>{entry.name}</span></button>)}
+        {visible.map((entry) => <button key={entry.path} type="button" role="treeitem" aria-selected={!entry.folder && selected === entry.path} className={selected === entry.path ? "active" : ""} style={{ "--tree-depth": entry.depth } as CSSProperties} onClick={() => !entry.folder && setSelected(entry.path)}>{entry.folder ? <Folder20Regular /> : entry.name.endsWith(".tsx") || entry.name.endsWith(".rs") ? <Code20Regular /> : <Document20Regular />}<span>{entry.name}</span></button>)}
       </div>
       <div className="file-preview">
         <span className="eyebrow">Selected file</span><strong>{selected}</strong>

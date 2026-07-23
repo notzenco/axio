@@ -37,7 +37,6 @@ button { border: 0; cursor: pointer; }
 button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
 button:disabled { opacity: .52; cursor: wait; }
 kbd { padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.035); color: var(--faint); font: 10px "Cascadia Mono", Consolas, monospace; }
-.fluent { font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets"; font-weight: 400; }
 .mini-icon { font-size: 9px; }
 .glass-panel { border: 1px solid var(--line); background: var(--glass); box-shadow: var(--shadow); backdrop-filter: blur(30px) saturate(145%); }
 .glass-surface { border: 1px solid var(--line); background: rgba(var(--surface-rgb), calc(var(--glass-alpha) + .04)); box-shadow: var(--shadow); backdrop-filter: blur(26px) saturate(150%); }

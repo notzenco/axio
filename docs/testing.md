@@ -45,6 +45,8 @@ For any desktop change, verify in the native Tauri window:
   double-click reset, bounded widths, and persistence across reload;
 - browser, files, review, output, and plan tools switch without losing their
   local UI state or shrinking the task timeline below its supported minimum;
+- centered task and dock navigation expose the same tool state, use real SVG
+  icons, and retain one Focus control and one review-decision surface;
 - compact overlays are mutually exclusive, contain focus, close with Escape or
   the scrim, and restore focus to their invoker;
 - focus mode enters/exits, clears hidden-panel semantics, and restores the
@@ -60,6 +62,8 @@ For any desktop change, verify in the native Tauri window:
 - command palette, no-results recovery, and keyboard shortcuts work;
 - settings categories and search expose matching controls and a useful
   no-results state;
+- toolbar-label, Review-count, and default-context-tool preferences apply
+  immediately, preserve accessible names, persist across reload, and reset;
 - appearance, workspace, composer, and accessibility preferences apply
   immediately, persist across reload, and reset together;
 - turning off Send with Enter preserves plain Enter for new lines and submits

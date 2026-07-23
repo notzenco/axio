@@ -149,12 +149,26 @@ export function App() {
     const workspacePatch = patch as Partial<typeof settings.workspace>;
     if (workspacePatch.sidebarOnLaunch !== undefined) layout.setSidebarOpen(workspacePatch.sidebarOnLaunch);
     if (workspacePatch.inspectorOnLaunch !== undefined) layout.setInspectorOpen(workspacePatch.inspectorOnLaunch);
+    if (workspacePatch.defaultContextPanel !== undefined) layout.setInspectorPanel(workspacePatch.defaultContextPanel);
   };
 
   const handleSettingsReset = () => {
     resetSettings();
     layout.setSidebarOpen(true);
     layout.setInspectorOpen(false);
+    layout.setInspectorPanel("diff");
+  };
+
+  const chooseContextTool = (panel: typeof layout.inspectorPanel) => {
+    if (layout.focusMode) {
+      layout.showInspectorPanel(panel, panel === "diff");
+      return;
+    }
+    if (layout.inspectorOpen && layout.inspectorPanel === panel) {
+      layout.setInspectorOpen(false);
+      return;
+    }
+    layout.showInspectorPanel(panel, panel === "diff");
   };
 
   if (!selectedTask) return null;
@@ -165,7 +179,7 @@ export function App() {
         <div className="workspace-shell">
           <Sidebar snapshot={snapshot} panel={layout.sidebarPanel} width={layout.workspaceWidth} onResize={layout.setWorkspaceWidth} onPanelChange={layout.showSidebarPanel} onNewTask={() => setNewTaskOpen(true)} onNotify={notify} onSelectTask={chooseTask} onTransitionAgent={transitionAgent} />
           <button id="overlay-scrim" className="overlay-scrim" type="button" aria-label="Close open panel" tabIndex={-1} onClick={layout.closeOverlay}></button>
-          <TaskCanvas preferences={settings.composer} snapshot={snapshot} task={selectedTask} onOpenAgents={() => layout.showSidebarPanel("agents")} onOpenFocus={() => layout.setFocusMode(true)} onOpenOutput={() => layout.showInspectorPanel("terminal")} onOpenReview={() => layout.showInspectorPanel("diff", true)} onSend={addDirection} />
+          <TaskCanvas contextOpen={layout.inspectorOpen} contextPanel={layout.inspectorPanel} focusMode={layout.focusMode} preferences={settings.composer} showReviewBadge={settings.workspace.showReviewBadge} snapshot={snapshot} task={selectedTask} onOpenAgents={() => layout.showSidebarPanel("agents")} onFocusToggle={() => layout.setFocusMode(!layout.focusMode)} onToolSelect={chooseContextTool} onOpenOutput={() => layout.showInspectorPanel("terminal")} onOpenReview={() => layout.showInspectorPanel("diff", true)} onSend={addDirection} />
           <ContextDock task={selectedTask} panel={layout.inspectorPanel} width={layout.contextWidth} onResize={layout.setContextWidth} onToggleWidth={layout.toggleContextWidth} onPanelChange={(panel) => layout.showInspectorPanel(panel)} onClose={() => layout.setInspectorOpen(false)} onDecideReview={decideReview} />
         </div>
         <Statusbar snapshot={snapshot} task={selectedTask} onWorkspace={() => layout.showSidebarPanel("tasks")} onAgents={() => layout.showSidebarPanel("agents")} onOutput={() => layout.showInspectorPanel("terminal")} />

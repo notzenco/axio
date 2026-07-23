@@ -63,10 +63,12 @@ its minimum usable width; collapsing either returns its space to the timeline.
 At 720px and below they become mutually exclusive, focus-contained overlays.
 
 The right dock is a host for task-scoped tools rather than a review-specific
-inspector. Its vertical rail currently owns browser, file explorer, review,
-command output, and plan surfaces. Each tool is a separate component with
-state preserved while switching tools. Native webview and filesystem services
-remain future integrations behind those surfaces.
+inspector. A centered workspace toolbar makes browser, file explorer, review,
+command output, plan, and focus controls visible even while the dock is closed;
+the dock repeats tool navigation in a centered top row for overlay use. Each
+tool is a separate component with state preserved while switching tools.
+Native webview and filesystem services remain future integrations behind those
+surfaces.
 
 See [`protocol.md`](protocol.md) for the current state vocabulary and command
 boundary, [`security-model.md`](security-model.md) for trust boundaries, and

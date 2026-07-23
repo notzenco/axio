@@ -9,7 +9,7 @@ export function useLayout(defaults: AppSettings["workspace"]) {
   const [inspectorOpen, setInspectorOpenState] = useState(() => defaults.inspectorOnLaunch && !matchMedia("(max-width: 720px)").matches);
   const [focusMode, setFocusModeState] = useState(false);
   const [sidebarPanel, setSidebarPanelState] = useState<SidebarPanel>("tasks");
-  const [inspectorPanel, setInspectorPanelState] = useState<ContextPanel>("diff");
+  const [inspectorPanel, setInspectorPanelState] = useState<ContextPanel>(defaults.defaultContextPanel);
   const panelSizes = usePanelSizes();
   const beforeFocus = useRef({ sidebarOpen: true, inspectorOpen: false });
   const lastOverlayTrigger = useRef<HTMLElement | null>(null);
@@ -122,6 +122,7 @@ export function useLayout(defaults: AppSettings["workspace"]) {
     setFocusMode,
     setContextWidth: panelSizes.setContextWidth,
     setInspectorOpen,
+    setInspectorPanel: setInspectorPanelState,
     setSidebarOpen,
     setWorkspaceWidth: panelSizes.setWorkspaceWidth,
     showInspectorPanel,

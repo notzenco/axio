@@ -63,7 +63,7 @@ failure/recovery states remain explicitly outside this pass.
 - `bun run --cwd apps/axio-desktop build`: passed the integrated Vite and Tauri
   release build.
 - Browser console warnings/errors: none.
-- Release executable: `.build/target/release/axio.exe`, 8,569,856 bytes.
+- Release executable: `.build/target/release/axio.exe`, 8,577,536 bytes.
 
 ## Remaining design gates
 
@@ -113,7 +113,7 @@ Required fidelity surfaces:
 - Colors and visual tokens: no token drift; focus, accent, surfaces, and
   contrast remain unchanged.
 - Image and asset fidelity: this settings surface contains no raster imagery;
-  existing Fluent icon treatment is unchanged.
+  the Fluent visual treatment is retained with packaged SVG components.
 - Copy and content: all category, setting, help, search, and action copy is
   unchanged.
 
@@ -134,9 +134,9 @@ Evidence:
 - `docs/design/context-dock-2026-07-23/files-overlay-840x904.png`
 
 The wide captures verify the 236px workspace panel, task canvas, 390px context
-dock, vertical tool rail, and complete Review and Browser surfaces at 1x
-density. The threshold-adjacent capture verifies the context dock as an overlay
-at 840 x 904 without document or workspace horizontal overflow.
+dock, and complete Review and Browser surfaces at 1x density. The
+threshold-adjacent capture verifies the context dock as an overlay at 840 x 904
+without document or workspace horizontal overflow.
 
 Interaction verification:
 
@@ -154,5 +154,37 @@ Typography, spacing, colors, Fluent icon treatment, and task-first hierarchy
 remain consistent with the existing desktop system. Browser and file content
 are explicitly representative UI boundaries; native webview and filesystem
 integration are not claimed by this pass.
+
+## Centered context navigation QA — 2026-07-23
+
+Evidence:
+
+- `docs/design/context-toolbar-2026-07-23/toolbar-dock-closed-1280x720.png`
+- `docs/design/context-toolbar-2026-07-23/toolbar-review-open-1280x720.png`
+- `docs/design/context-toolbar-2026-07-23/workspace-settings-1280x720.png`
+
+The first capture verifies the centered, always-visible task toolbar with
+Focus, Browser, Files, Review, Output, and Plan. The second verifies the
+matching centered navigation inside the open dock and the Review attention
+badge without duplicating the old titlebar actions.
+
+Interaction verification:
+
+- Exactly one Focus control is exposed. Entering and leaving focus restores
+  the surrounding workspace, while selecting a tool from focus exits focus and
+  opens that tool.
+- Selecting the active tool closes the dock; selecting another tool updates
+  both launcher and dock selection.
+- Review, Files, Browser, Output, and Plan each expose one corresponding panel.
+- At constrained task widths the launcher becomes a centered 223px icon-only
+  toolbar with accessible names and no overflow.
+- Settings, command palette, task timeline, status bar, dialogs, sidebar,
+  composer, dock, and tool surfaces now use packaged Fluent SVG components
+  rather than font codepoints.
+- Workspace settings can switch the launcher between labelled and icon-only
+  modes, hide the visual Review count without losing its accessible status, and
+  choose the default context tool; all three persist and reset to documented
+  defaults.
+- Browser console warnings/errors: none.
 
 final result: passed

@@ -19,6 +19,8 @@ workspace are historical evidence, not current instructions.
 
 - [`desktop-design.md`](desktop-design.md) — information architecture,
   interaction contract, responsive behavior, and visual system.
+- [`settings.md`](settings.md) — every desktop preference, its default,
+  responsive behavior, persistence, and reset semantics.
 - [`ui-improvement-plan.md`](ui-improvement-plan.md) — implemented UI
   foundations, remaining refinements, and acceptance criteria.
 - [`ui-audit-2026-07-22.md`](ui-audit-2026-07-22.md) — original

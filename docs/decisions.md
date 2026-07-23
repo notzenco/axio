@@ -73,8 +73,10 @@ provider count.
 ## D-007: contextual tools use one resizable dock
 
 **Decision:** Browser, files, review, output, and plan share one optional
-resizable right dock with a compact vertical tool rail. The left side remains a
-separate resizable workspace panel for tasks, worktrees, and agents.
+resizable right dock. A centered toolbar above the task launches these tools
+and owns the single Focus control; the dock repeats a centered icon navigation
+row for overlay use. The left side remains a separate resizable workspace panel
+for tasks, worktrees, and agents.
 
 **Why:** The task remains primary and side tools should not reserve permanent
 space. One bounded dock gives heterogeneous task tools stable ownership without
