@@ -23,6 +23,10 @@ export function workspaceLifecycle() {
   return invoke?.<WorkspaceLifecycleSnapshot>("workspace_lifecycle");
 }
 
+export function pickWorkspaceFolder() {
+  return invoke?.<string | null>("pick_workspace_folder");
+}
+
 export function openWorkspace(path: string) {
   return invoke?.<WorkspaceLifecycleSnapshot>("open_workspace", { path });
 }

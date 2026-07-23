@@ -22,6 +22,7 @@ tauri-build = { version = "2", features = [] }
 axio-core.workspace = true
 axio-protocol.workspace = true
 tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
 
 [lints]
 workspace = true

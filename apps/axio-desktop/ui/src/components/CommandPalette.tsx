@@ -40,8 +40,14 @@ export function CommandPalette({ onClose, onCommand, open, tasks }: CommandPalet
   }, [open]);
   useLightDismiss(ref, useCallback(onClose, [onClose]));
   const normalized = query.trim().toLowerCase();
+  const hasWorkspace = tasks.length > 0;
   const visibleTasks = tasks.filter((task) => task.title.toLowerCase().includes(normalized));
-  const visibleCommands = commands.filter((command) => `${command.name} ${command.detail}`.toLowerCase().includes(normalized));
+  const availableCommands = commands
+    .filter((command) => hasWorkspace || command.id !== "review")
+    .map((command) => !hasWorkspace && command.id === "new"
+      ? { ...command, icon: Folder20Regular, name: "Open workspace", detail: "Choose a local Git repository" }
+      : command);
+  const visibleCommands = availableCommands.filter((command) => `${command.name} ${command.detail}`.toLowerCase().includes(normalized));
   const choose = (value: string) => {
     onClose();
     onCommand(value);

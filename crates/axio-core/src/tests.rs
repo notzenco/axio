@@ -86,6 +86,22 @@ fn repository_metadata_enriches_the_selected_task() {
 }
 
 #[test]
+fn closing_a_repository_clears_repository_scoped_state() {
+    let mut workspace = Workspace::demo();
+
+    workspace.close_repository();
+
+    let snapshot = workspace.snapshot();
+    assert_eq!(snapshot.project, "No workspace");
+    assert_eq!(snapshot.branch, "—");
+    assert!(snapshot.repository.is_none());
+    assert!(snapshot.tasks.is_empty());
+    assert!(snapshot.agents.is_empty());
+    assert!(snapshot.activity.is_empty());
+    assert!(snapshot.selected_task.is_empty());
+}
+
+#[test]
 fn direction_and_review_are_recorded_in_the_task_narrative() {
     let mut workspace = Workspace::demo();
 

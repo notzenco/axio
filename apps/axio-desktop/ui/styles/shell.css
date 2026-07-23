@@ -23,6 +23,7 @@
 .window-controls button:hover { background: rgba(255,255,255,.075); color: white; }
 .window-controls .window-close:hover { background: #c42b3a; }
 .workspace-shell { position: relative; min-height: 0; display: grid; grid-template-columns: var(--sidebar-width) minmax(420px,1fr) var(--context-width); grid-template-rows: minmax(0,1fr); gap: 10px; padding: 10px; overflow: hidden; transition: grid-template-columns .2s cubic-bezier(.2,.75,.2,1); }
+.workspace-shell.workspace-empty-shell { grid-template-columns: var(--sidebar-width) minmax(320px, 1fr); }
 .workspace-shell > .sidebar,
 .workspace-shell > .task-canvas,
 .workspace-shell > .inspector { min-height: 0; height: 100%; }
@@ -43,6 +44,8 @@ body.sidebar-hidden .sidebar { transform: translateX(-18px); opacity: 0; visibil
 body.inspector-hidden .workspace-shell { grid-template-columns: var(--sidebar-width) minmax(420px,1fr) 0; }
 body.inspector-hidden .inspector { transform: translateX(18px); opacity: 0; visibility: hidden; }
 body.sidebar-hidden.inspector-hidden .workspace-shell { grid-template-columns: 0 minmax(420px,1fr) 0; }
+body .workspace-shell.workspace-empty-shell { grid-template-columns: var(--sidebar-width) minmax(320px, 1fr); }
+body.sidebar-hidden .workspace-shell.workspace-empty-shell { grid-template-columns: 0 minmax(320px, 1fr); }
 body.focus-mode .workspace-shell { grid-template-columns: 0 minmax(320px,1fr) 0; padding-inline: 10px; }
 .focus-mode .sidebar, .focus-mode .inspector { overflow: hidden; opacity: 0; visibility: hidden; }
 .focus-mode #focus-toggle { border-color: rgba(154,124,255,.28); background: rgba(154,124,255,.12); color: #ddd6ff; }
