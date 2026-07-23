@@ -519,6 +519,31 @@ mod tests {
     }
 
     #[test]
+    fn output_buffer_stays_bounded_under_sustained_chunked_output() {
+        let source_length = MAX_OUTPUT_BYTES * 10 + 113;
+        let source = (0..source_length)
+            .map(|index| (index % 251) as u8)
+            .collect::<Vec<_>>();
+        let mut buffer = OutputBuffer::default();
+
+        for chunk in source.chunks(257) {
+            buffer.append(chunk);
+        }
+
+        let contents = buffer.snapshot();
+        assert_eq!(contents.data.len(), MAX_OUTPUT_BYTES);
+        assert_eq!(
+            contents.data,
+            source[source.len() - MAX_OUTPUT_BYTES..].to_vec()
+        );
+        assert_eq!(
+            contents.start_offset,
+            (source.len() - MAX_OUTPUT_BYTES) as u64
+        );
+        assert_eq!(contents.end_offset, source.len() as u64);
+    }
+
+    #[test]
     fn spawn_limits_reject_zero_large_batches_and_total_overflow() {
         assert!(validate_spawn_count(0, 0).is_err());
         assert!(validate_spawn_count(MAX_SPAWN_COUNT + 1, 0).is_err());
