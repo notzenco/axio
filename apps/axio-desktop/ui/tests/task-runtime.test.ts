@@ -10,6 +10,7 @@ import { TerminalRenderQueue } from "../src/data/terminal-rendering";
 import {
   applyTerminalExit,
   reconcileTerminalSessions,
+  TerminalSessionOperationGate,
 } from "../src/data/terminal-sessions";
 import type { AgentSession, TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../src/types";
 
@@ -208,6 +209,42 @@ describe("task runtime projections", () => {
       running,
       spawnedDuringRefresh,
     ]);
+  });
+
+  test("gates duplicate stop and close operations per session", () => {
+    const gate = new TerminalSessionOperationGate();
+
+    expect(gate.begin("session-1")).toBe(true);
+    expect(gate.begin("session-1")).toBe(false);
+    expect(gate.begin("session-2")).toBe(true);
+    expect(gate.snapshot()).toEqual(new Set(["session-1", "session-2"]));
+
+    gate.finish("session-1");
+    expect(gate.begin("session-1")).toBe(true);
+    gate.finish("session-1");
+    gate.finish("session-2");
+    expect(gate.snapshot().size).toBe(0);
+  });
+
+  test("releases operation gates under sustained session churn", () => {
+    const gate = new TerminalSessionOperationGate();
+    let duplicateAcceptances = 0;
+    let rejectedOperations = 0;
+
+    for (let operation = 0; operation < 2_400_000; operation += 1) {
+      const sessionId = `session-${operation % 12}`;
+      if (!gate.begin(sessionId)) rejectedOperations += 1;
+      if (gate.begin(sessionId)) duplicateAcceptances += 1;
+      else rejectedOperations += 1;
+      if (operation % 3 !== 0) gate.finish(sessionId);
+      if (operation % 12 === 11) {
+        for (let session = 0; session < 12; session += 1) gate.finish(`session-${session}`);
+      }
+    }
+
+    expect(duplicateAcceptances).toBe(0);
+    expect(rejectedOperations).toBeGreaterThan(0);
+    expect(gate.snapshot().size).toBe(0);
   });
 
   test("reconciles sustained terminal lifecycle races across the session limit", () => {

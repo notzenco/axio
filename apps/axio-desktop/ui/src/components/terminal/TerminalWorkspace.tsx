@@ -26,6 +26,7 @@ export function TerminalWorkspace({ notify, snapshot, task, terminal }: Terminal
     busy,
     capacityStatus,
     close,
+    pendingSessionIds,
     refreshCapacity,
     sessions,
     spawn,
@@ -63,7 +64,7 @@ export function TerminalWorkspace({ notify, snapshot, task, terminal }: Terminal
       </header>
       <div className="terminal-scope-note"><strong>{task.title}</strong><span>Shared working directory: {snapshot.repository?.root}</span><span>{capacityStatus === "loading" ? "Checking app-wide capacity…" : capacityStatus === "error" ? "Capacity unavailable" : `${activeCount} of ${MAX_TERMINAL_SESSIONS} active app-wide`}</span></div>
       {sessions.length > 0
-        ? <div className="terminal-grid">{sessions.map((session) => <TerminalPane key={session.id} session={session} onError={notify} onStop={(id) => void stop(id)} onClose={(id) => void close(id)} />)}</div>
+        ? <div className="terminal-grid">{sessions.map((session) => <TerminalPane key={session.id} busy={pendingSessionIds.has(session.id)} session={session} onError={notify} onStop={(id) => void stop(id)} onClose={(id) => void close(id)} />)}</div>
         : <div className="terminal-empty"><WindowConsole20Regular /><strong>{isNative ? "No terminal sessions yet" : "Terminal mode requires the native Axio app"}</strong><p>{isNative ? "Choose a provider and launch one or more independent instances. Axio does not persist terminal output or credentials." : "The browser preview cannot start local processes."}</p></div>}
     </section>
   );

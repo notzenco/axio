@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   applyTerminalExit,
   reconcileTerminalSessions,
+  TerminalSessionOperationGate,
 } from "../data/terminal-sessions";
 import {
   closeTerminal,
@@ -24,6 +25,10 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
   const refreshVersion = useRef(0);
   const capacityVersion = useRef(0);
   const spawnPending = useRef(false);
+  const sessionOperations = useRef(new TerminalSessionOperationGate());
+  const [pendingSessionIds, setPendingSessionIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const activeTaskId = useRef(taskId);
   activeTaskId.current = taskId;
 
@@ -121,22 +126,37 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
   };
 
   const stop = async (sessionId: string) => {
+    if (!sessionOperations.current.begin(sessionId)) return;
+    const operationTaskId = taskId;
+    setPendingSessionIds(sessionOperations.current.snapshot());
     try {
       const updated = await stopTerminal(sessionId);
-      if (updated) {
+      if (updated && activeTaskId.current === operationTaskId) {
         setSessions((current) => current.map((session) => session.id === sessionId ? updated : session));
       }
     } catch (error) {
-      onError(String(error));
+      if (activeTaskId.current === operationTaskId) onError(String(error));
+    } finally {
+      sessionOperations.current.finish(sessionId);
+      setPendingSessionIds(sessionOperations.current.snapshot());
     }
   };
 
   const close = async (sessionId: string) => {
+    if (!sessionOperations.current.begin(sessionId)) return;
+    const operationTaskId = taskId;
+    refreshVersion.current += 1;
+    setPendingSessionIds(sessionOperations.current.snapshot());
     try {
       await closeTerminal(sessionId);
-      setSessions((current) => current.filter((session) => session.id !== sessionId));
+      if (activeTaskId.current === operationTaskId) {
+        setSessions((current) => current.filter((session) => session.id !== sessionId));
+      }
     } catch (error) {
-      onError(String(error));
+      if (activeTaskId.current === operationTaskId) onError(String(error));
+    } finally {
+      sessionOperations.current.finish(sessionId);
+      setPendingSessionIds(sessionOperations.current.snapshot());
     }
   };
 
@@ -145,6 +165,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
     busy,
     capacityStatus,
     close,
+    pendingSessionIds,
     refresh,
     refreshCapacity,
     sessions,

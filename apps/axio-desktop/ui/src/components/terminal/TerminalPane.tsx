@@ -16,6 +16,7 @@ import { TerminalRenderQueue } from "../../data/terminal-rendering";
 import { TerminalResizeScheduler } from "../../data/terminal-resize";
 
 interface TerminalPaneProps {
+  busy: boolean;
   onClose: (sessionId: string) => void;
   onError: (message: string) => void;
   onStop: (sessionId: string) => void;
@@ -34,7 +35,7 @@ function queueOrderedEvent(
   nextOffset.current = eventEnd;
 }
 
-export function TerminalPane({ onClose, onError, onStop, session }: TerminalPaneProps) {
+export function TerminalPane({ busy, onClose, onError, onStop, session }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -177,8 +178,8 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
         </div>
         <div>
           {running || session.status === "stopping"
-            ? <button type="button" disabled={!running} aria-label={`Stop ${terminalProviderLabel(session.provider)} ${session.ordinal}`} title="Stop session" onClick={() => onStop(session.id)}><Stop20Regular /></button>
-            : <button type="button" aria-label={`Close ${terminalProviderLabel(session.provider)} ${session.ordinal}`} title="Close pane" onClick={() => onClose(session.id)}><Dismiss20Regular /></button>}
+            ? <button type="button" disabled={!running || busy} aria-label={`Stop ${terminalProviderLabel(session.provider)} ${session.ordinal}`} title={busy ? "Stopping…" : "Stop session"} onClick={() => onStop(session.id)}><Stop20Regular /></button>
+            : <button type="button" disabled={busy} aria-label={`Close ${terminalProviderLabel(session.provider)} ${session.ordinal}`} title={busy ? "Closing…" : "Close pane"} onClick={() => onClose(session.id)}><Dismiss20Regular /></button>}
         </div>
       </header>
       <div className="terminal-viewport" ref={containerRef}></div>

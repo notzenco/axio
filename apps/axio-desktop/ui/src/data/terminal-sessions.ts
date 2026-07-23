@@ -11,6 +11,24 @@ const statusRank: Record<TerminalSessionStatus, number> = {
   failed: 2,
 };
 
+export class TerminalSessionOperationGate {
+  private readonly pending = new Set<string>();
+
+  begin(sessionId: string) {
+    if (this.pending.has(sessionId)) return false;
+    this.pending.add(sessionId);
+    return true;
+  }
+
+  finish(sessionId: string) {
+    this.pending.delete(sessionId);
+  }
+
+  snapshot() {
+    return new Set(this.pending);
+  }
+}
+
 export function applyTerminalExit(
   sessions: TerminalSessionSnapshot[],
   event: TerminalExitEvent,
