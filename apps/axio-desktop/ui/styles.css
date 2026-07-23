@@ -2,6 +2,8 @@
 @import url("./styles/shell.css");
 @import url("./styles/sidebar.css");
 @import url("./styles/task.css");
+@import url("./styles/workspace-toolbar.css");
+@import url("./styles/workflow.css");
 @import url("./styles/inspector.css");
 @import url("./styles/dialogs.css");
 @import url("./styles/responsive.css");

@@ -91,6 +91,7 @@ impl Workspace {
                     timestamp: "10:36".to_owned(),
                 },
             ],
+            repository: None,
         })
     }
 }

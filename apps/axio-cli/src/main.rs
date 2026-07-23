@@ -1,6 +1,6 @@
 use std::{env, process::ExitCode};
 
-use axio_core::Workspace;
+use axio_core::{Workspace, discover_repository};
 
 fn main() -> ExitCode {
     let arguments: Vec<String> = env::args().skip(1).collect();
@@ -25,7 +25,11 @@ fn main() -> ExitCode {
 }
 
 fn print_status(json: bool) -> ExitCode {
-    let snapshot = Workspace::demo().snapshot();
+    let mut workspace = Workspace::demo();
+    if let Ok(repository) = discover_repository() {
+        workspace.attach_repository(repository);
+    }
+    let snapshot = workspace.snapshot();
 
     if json {
         match serde_json::to_string_pretty(&snapshot) {

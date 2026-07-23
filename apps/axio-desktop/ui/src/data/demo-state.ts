@@ -12,6 +12,7 @@ export const fallbackSnapshot: WorkspaceSnapshot = {
     { id: "protocol", title: "Agent protocol refactor", status: "active", worktree: "axio/agent-protocol", agent_ids: ["codex-01"], unread: 0, changed_files: 0, review: "none" },
   ],
   selected_task: "desktop",
+  repository: null,
   activity: [
     { id: "activity-1", task_id: "desktop", agent_id: "codex-01", kind: "tool", summary: "Mapped the desktop boundary and shared Rust state", detail: "cargo test --workspace --locked", timestamp: "10:24" },
     { id: "activity-2", task_id: "desktop", agent_id: "claude-01", kind: "change", summary: "Implemented the unified task workspace", detail: "3 files changed in apps/axio-desktop/ui", timestamp: "10:29" },

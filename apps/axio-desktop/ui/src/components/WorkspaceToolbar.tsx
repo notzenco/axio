@@ -1,32 +1,36 @@
-import { FullScreenMaximize20Regular, FullScreenMinimize20Regular } from "@fluentui/react-icons";
-import type { ContextPanel } from "../types";
-import { contextTools } from "./context/contextTools";
+import { AppsListDetail20Regular, Grid20Regular } from "@fluentui/react-icons";
+import type { ContextPanel, WorkMode } from "../types";
+import { workspaceTools } from "./context/contextTools";
 
 interface WorkspaceToolbarProps {
   contextOpen: boolean;
-  focusMode: boolean;
-  onFocusToggle: () => void;
+  mode: WorkMode;
+  onModeChange: (mode: WorkMode) => void;
   onToolSelect: (panel: ContextPanel) => void;
   panel: ContextPanel;
-  reviewCount: number;
-  reviewPending: boolean;
-  showReviewBadge: boolean;
 }
 
-export function WorkspaceToolbar({ contextOpen, focusMode, onFocusToggle, onToolSelect, panel, reviewCount, reviewPending, showReviewBadge }: WorkspaceToolbarProps) {
-  const FocusIcon = focusMode ? FullScreenMinimize20Regular : FullScreenMaximize20Regular;
+const workModes = [
+  { id: "activity", icon: AppsListDetail20Regular, label: "Activity" },
+  { id: "canvas", icon: Grid20Regular, label: "Canvas" },
+] satisfies { id: WorkMode; icon: typeof Grid20Regular; label: string }[];
+
+export function WorkspaceToolbar({ contextOpen, mode, onModeChange, onToolSelect, panel }: WorkspaceToolbarProps) {
   return (
-    <nav className="workspace-toolbar" aria-label="Workspace tools">
-      <button className={focusMode ? "active" : ""} type="button" aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"} aria-pressed={focusMode} title={focusMode ? "Exit focus mode" : "Enter focus mode"} onClick={onFocusToggle}>
-        <FocusIcon /><span>{focusMode ? "Exit focus" : "Focus"}</span>
-      </button>
-      <i className="workspace-toolbar-divider"></i>
-      {contextTools.map((tool) => {
-        const Icon = tool.icon;
-        const active = contextOpen && panel === tool.id;
-        const accessibleLabel = `${tool.label}${tool.id === "diff" && reviewPending ? `, ${reviewCount} files require review` : ""}`;
-        return <button key={tool.id} className={`${active ? "active" : ""}${tool.id === "diff" && reviewPending ? " attention" : ""}`} type="button" aria-label={accessibleLabel} aria-pressed={active} title={accessibleLabel} onClick={() => onToolSelect(tool.id)}><Icon /><span>{tool.label}</span>{tool.id === "diff" && reviewPending && showReviewBadge && <b>{reviewCount}</b>}</button>;
-      })}
+    <nav className="workspace-toolbar" aria-label="Workspace navigation">
+      <div className="work-mode-switcher" role="tablist" aria-label="Work modes">
+        {workModes.map((workMode) => {
+          const Icon = workMode.icon;
+          return <button key={workMode.id} className={mode === workMode.id ? "active" : ""} type="button" role="tab" aria-label={workMode.label} aria-selected={mode === workMode.id} title={workMode.label} onClick={() => onModeChange(workMode.id)}><Icon /><span>{workMode.label}</span></button>;
+        })}
+      </div>
+      <div className="workspace-tool-shelf" aria-label="Context tools">
+        {workspaceTools.map((tool) => {
+          const Icon = tool.icon;
+          const active = contextOpen && panel === tool.id;
+          return <button key={tool.id} className={active ? "active" : ""} type="button" aria-label={`Open ${tool.label}`} aria-pressed={active} title={`Open ${tool.label} in the context dock`} onClick={() => onToolSelect(tool.id)}><Icon /><span>{tool.label}</span></button>;
+        })}
+      </div>
     </nav>
   );
 }

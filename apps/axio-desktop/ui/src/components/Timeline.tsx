@@ -1,10 +1,16 @@
-import { Checkmark16Regular, DocumentEdit20Regular, WindowConsole20Regular } from "@fluentui/react-icons";
+import { Checkmark16Regular, ChevronDown16Regular, DocumentEdit20Regular, WindowConsole20Regular } from "@fluentui/react-icons";
+import { activityForTask } from "../data/activity-order";
 import type { AgentSession, WorkspaceActivity, WorkspaceSnapshot, WorkspaceTask } from "../types";
 
 const colorFor = (agent?: AgentSession) => agent?.kind === "codex" ? "cyan" : agent?.kind === "claude_code" ? "amber" : "violet";
 
 function ActivityDetail({ activity, onReview, task }: { activity: WorkspaceActivity; onReview: () => void; task: WorkspaceTask }) {
-  if (activity.kind === "tool") return <div className="tool-call"><WindowConsole20Regular /><span>{activity.detail ?? "Local command"}</span><b><Checkmark16Regular /></b></div>;
+  if (activity.kind === "tool") return (
+    <details className="tool-call-disclosure" open>
+      <summary><WindowConsole20Regular /><span><strong>Tool call</strong><small>{activity.detail ?? "Local command"}</small></span><b><Checkmark16Regular /> Verified</b><ChevronDown16Regular /></summary>
+      <div className="tool-call-body"><span>Command completed successfully in the local worktree.</span><code>{activity.detail ?? "Local command"}</code></div>
+    </details>
+  );
   if (activity.kind === "change") return (
     <div className="change-summary" title={activity.detail ?? undefined}>
       <div className="change-heading"><DocumentEdit20Regular /><strong>Files changed</strong><b>{task.changed_files}</b><span className="diff-total">local worktree</span></div>
@@ -17,11 +23,12 @@ function ActivityDetail({ activity, onReview, task }: { activity: WorkspaceActiv
   return activity.detail ? <div className="event-detail">{activity.detail}</div> : null;
 }
 
-export function Timeline({ onReview, snapshot, task }: { onReview: () => void; snapshot: WorkspaceSnapshot; task: WorkspaceTask }) {
-  const events = snapshot.activity.filter((activity) => activity.task_id === task.id);
+export function Timeline({ compact = false, onReview, snapshot, task }: { compact?: boolean; onReview: () => void; snapshot: WorkspaceSnapshot; task: WorkspaceTask }) {
+  const allEvents = activityForTask(snapshot.activity, task.id);
+  const events = compact ? allEvents.slice(-3) : allEvents;
   if (!events.length) return <section id="timeline" className="timeline" aria-label="Task activity"><div className="timeline-empty"><span>A</span><strong>This task is ready</strong><p>Send the first direction to begin the local activity narrative.</p></div></section>;
   return (
-    <section id="timeline" className="timeline" aria-label="Task activity">
+    <section id={compact ? "recent-timeline" : "timeline"} className={`timeline${compact ? " compact-timeline" : ""}`} aria-label={compact ? "Recent task activity" : "Task activity"}>
       {events.map((activity) => {
         const agent = snapshot.agents.find((candidate) => candidate.id === activity.agent_id);
         const color = colorFor(agent);

@@ -17,11 +17,11 @@ Reset all restores every category to the defaults in this document.
 | Setting | Default | Behavior |
 |---|---:|---|
 | Open workspace sidebar | On | Opens Tasks and Worktrees when Axio starts on a wide viewport. |
-| Open context dock | Off | Opens the context dock when Axio starts on a wide viewport. |
-| Default context tool | Review | Selects Browser, Files, Review, Output, or Plan as the initial dock tool. Changing it also updates the current dock selection without forcing the dock open. |
+| Open context dock | On | Opens the context dock when Axio starts on a wide viewport. |
+| Default context tool | Review when required | Selects Browser, Files, Terminal, Plan, or the contextual Review surface as the initial dock content. Changing it also updates the current dock selection without forcing the dock open. |
 | Open pending reviews automatically | On | Opens and expands Review when the selected task requires attention. |
-| Show toolbar labels | On | Shows text beside the centered task-toolbar icons when space permits. Turning it off keeps accessible names and hover titles. |
-| Show review count in toolbar | On | Shows the changed-file count on a pending Review toolbar control. Attention colour and its accessible description remain when the count is hidden. |
+| Show toolbar labels | On | Shows text beside the Activity/Canvas modes and Browser, Files, Terminal, and Plan tools when space permits. Turning it off keeps accessible names and hover titles. |
+| Show contextual review notice | On | Shows the changed-file notice beside the workspace navigation when a review gate needs attention. |
 | Show status bar | On | Shows local-engine, worktree, branch, agent, and check status. |
 
 Compact layouts override the startup panel settings so content is not covered
@@ -56,5 +56,5 @@ storage and are merged with current defaults when new fields are introduced.
 The previous appearance-only key is migrated on first load. If local storage is
 unavailable or invalid, Axio uses safe defaults for the current session.
 
-Reset all restores the values above, reopens the workspace sidebar, closes the
-context dock, and returns Review as the selected context tool.
+Reset all restores the values above, reopens the workspace sidebar and context
+dock, and returns Review as the selected context when a gate requires it.

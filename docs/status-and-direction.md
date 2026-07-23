@@ -10,10 +10,11 @@ finished agent runtime.
 
 Axio is an early, public Rust and Tauri foundation at `0.0.1`. It has a working
 native desktop shell, a responsive task-first interface, a shared typed state
-model, validated in-memory transitions, and a small CLI. The current build is a
-functional interaction prototype over deterministic demo data. It does not yet
-launch or supervise real coding agents, create Git worktrees, stream terminals,
-persist workspaces, or read live diffs.
+model, validated in-memory transitions, read-only discovery of the containing
+Git repository, and a small CLI. The current build combines a real repository
+boundary with deterministic task and agent demo data. It does not yet launch or
+supervise real coding agents, create Git worktrees, stream terminals, persist
+workspaces, or render complete live diffs.
 
 There is one desktop product. The CLI remains a separate automation consumer of
 the same Rust core. The paused legacy switcher is not a second current app.
@@ -24,7 +25,8 @@ the same Rust core. The paused legacy switcher is not a second current app.
 |---|---|---|
 | Protocol | Serializable agent, task, activity, review, and workspace snapshot types. | `crates/axio-protocol`; Rust compilation and tests. |
 | Core state | Validated agent transitions, task selection/creation, direction events, and review decisions. | `crates/axio-core`; five unit tests. |
-| CLI | `status`, `status --json`, and `version` over the shared demo snapshot. | CLI smoke test in CI. |
+| Repository inspection | Discovers the Git checkout containing the process directory or executable, then reads its root, branch, tracked/untracked file inventory, working-tree statuses, and text line statistics without invoking a shell. | `crates/axio-core/src/repository.rs`; parser tests and live CLI verification. |
+| CLI | `status`, `status --json`, and `version` over the shared snapshot, enriched with live repository data when discovery succeeds. | CLI smoke test in CI and local repository verification. |
 | Native shell | Tauri window, drag/minimize/maximize/close, narrow command bridge, and restrictive CSP. | Native release build and manual Windows run. |
 | Task workspace | Task/worktree selection, chronological activity, explicit attention state, inline task validation, agent controls, directions, and review decisions. | Browser and native interaction verification. |
 | Navigation | Independently collapsible wide panels, mutually exclusive focus-contained compact overlays, focus mode, and a command palette with recovery state. | `design-qa.md` at desktop and compact viewports. |
@@ -45,26 +47,27 @@ not implemented:
 | Create task | Adds a task and generated worktree name in memory. | Repository selection and `git worktree` creation. |
 | Composer | Appends a direction event to the selected timeline. | Routing to Codex, Claude Code, OpenCode, Pi, or custom connectors. |
 | Review approval | Changes review/task status and appends an event. | Reading a real diff, staging, committing, merging, or returning feedback to an agent. |
-| Diff panel | Shows representative code changes. | Git-backed file and hunk data. |
+| Diff panel | Native builds show live changed paths, statuses, and available line totals; browser-only preview data remains representative. | Unified patches, hunk navigation, staged/unstaged grouping, and binary detail. |
 | Browser tool | Provides a working address/refresh shell and preview boundary. | Native embedded webview lifecycle and dev-server discovery. |
-| File explorer | Provides filtering, selection, and representative worktree structure. | Native filesystem reads, watches, editing, and worktree scoping. |
+| File explorer | Native builds show a bounded, searchable tree of tracked and untracked repository paths with manual refresh; browser-only runs identify their preview data. | File contents, watches, editing, and explicit worktree scoping. |
 | Output panel | Shows representative terminal output. | PTY/process streaming, input, resize, and exit status. |
 | Plan panel | Shows representative task steps. | Connector plan events and durable progress. |
 | Command palette | Switches demo tasks and invokes local UI actions. | Search across real repositories, commands, and sessions. |
-| Status bar | Reflects current demo snapshot. | Live engine, Git, test, usage, and connector health. |
+| Status bar | Native builds show the discovered project, branch, and working-tree change count. | Live engine, test, usage, and connector health. |
 
-The browser preview intentionally uses a typed fallback snapshot.
-The Tauri build calls Rust commands, but Rust currently initializes the same
-deterministic `Workspace::demo()` data and keeps it only for the process life.
+The browser preview intentionally uses a typed fallback snapshot. The Tauri
+build initializes deterministic task and agent state, enriches it with the
+containing Git repository when available, and keeps task mutations only for the
+process life.
 
 ## Not implemented
 
-- Project discovery, repository opening, and recent-workspace management.
+- Repository/folder picker, recent-workspace management, and explicit close.
 - Durable database, migrations, crash recovery, or session restoration.
 - Agent connector descriptors, authentication handoff, or process supervision.
 - PTY terminal sessions, structured tool events, logs, cancellation, or timeouts.
-- Real Git status, branches, worktrees, diffs, staging, merge, or conflict flows.
-- Filesystem browser and editor handoff.
+- Git worktrees, complete diffs, staging, merge, or conflict flows.
+- File-content reading, filesystem watches, and editor handoff.
 - OS notifications, scheduled work, automations, or background daemon.
 - Remote execution, synchronization, accounts, billing, or hosted inference.
 - Installer bundles, signing, auto-update, rollback, or stable release channel.
@@ -89,7 +92,8 @@ deterministic `Workspace::demo()` data and keeps it only for the process life.
 The next work is outcome-driven rather than tied to invented version numbers or
 dates. The dependency order is:
 
-1. Make a real local repository durable in Axio.
+1. Extend automatic read-only repository discovery into explicit open/recent
+   workspace selection and durable restoration.
 2. Define and prove one real external-agent connector lifecycle.
 3. Turn process, terminal, tool, and approval events into the task narrative.
 4. Connect task boundaries to real Git worktrees and review operations.

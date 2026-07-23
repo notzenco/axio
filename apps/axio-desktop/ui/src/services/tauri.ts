@@ -19,6 +19,10 @@ export function workspaceSnapshot() {
   return invoke?.<WorkspaceSnapshot>("workspace_snapshot");
 }
 
+export function refreshRepository() {
+  return invoke?.<WorkspaceSnapshot>("refresh_repository");
+}
+
 export function selectTask(id: string) {
   return invoke?.<WorkspaceSnapshot>("select_task", { id });
 }
@@ -27,8 +31,8 @@ export function createTask(title: string) {
   return invoke?.<WorkspaceSnapshot>("create_task", { title });
 }
 
-export function sendDirection(taskId: string, message: string) {
-  return invoke?.<WorkspaceSnapshot>("send_direction", { taskId, message });
+export function sendDirection(taskId: string, message: string, audience: string) {
+  return invoke?.<WorkspaceSnapshot>("send_direction", { taskId, message, audience });
 }
 
 export function reviewTask(taskId: string, approved: boolean) {

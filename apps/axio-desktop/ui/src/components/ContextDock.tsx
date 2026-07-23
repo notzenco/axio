@@ -1,5 +1,5 @@
 import { panelSizeLimits } from "../hooks/usePanelSizes";
-import type { ContextPanel, WorkspaceTask } from "../types";
+import type { ContextPanel, WorkspaceSnapshot, WorkspaceTask } from "../types";
 import { ArrowMaximize20Regular, Dismiss20Regular } from "@fluentui/react-icons";
 import { PanelResizeHandle } from "./PanelResizeHandle";
 import { BrowserTool } from "./context/BrowserTool";
@@ -12,15 +12,16 @@ import { contextTools } from "./context/contextTools";
 interface ContextDockProps {
   onClose: () => void;
   onDecideReview: (approved: boolean) => void;
-  onPanelChange: (panel: ContextPanel) => void;
   onResize: (width: number) => void;
+  onRefreshRepository: () => void;
   onToggleWidth: () => void;
   panel: ContextPanel;
+  snapshot: WorkspaceSnapshot;
   task: WorkspaceTask;
   width: number;
 }
 
-export function ContextDock({ onClose, onDecideReview, onPanelChange, onResize, onToggleWidth, panel, task, width }: ContextDockProps) {
+export function ContextDock({ onClose, onDecideReview, onRefreshRepository, onResize, onToggleWidth, panel, snapshot, task, width }: ContextDockProps) {
   const activeTool = contextTools.find((tool) => tool.id === panel) ?? contextTools[0];
   const ActiveIcon = activeTool.icon;
   return (
@@ -34,15 +35,9 @@ export function ContextDock({ onClose, onDecideReview, onPanelChange, onResize, 
             <button id="inspector-close" className="icon-button" type="button" aria-label="Close context dock" onClick={onClose}><Dismiss20Regular /></button>
           </div>
         </header>
-        <nav className="dock-tool-nav" aria-label="Dock tools">
-          {contextTools.map((tool) => {
-            const Icon = tool.icon;
-            return <button key={tool.id} className={panel === tool.id ? "active" : ""} type="button" aria-label={tool.label} aria-pressed={panel === tool.id} title={tool.label} onClick={() => onPanelChange(tool.id)}><Icon /></button>;
-          })}
-        </nav>
         <BrowserTool active={panel === "browser"} />
-        <FileExplorerTool active={panel === "files"} />
-        <ReviewTool active={panel === "diff"} task={task} onDecideReview={onDecideReview} />
+        <FileExplorerTool active={panel === "files"} repository={snapshot.repository} onRefresh={onRefreshRepository} />
+        <ReviewTool active={panel === "diff"} repository={snapshot.repository} task={task} onDecideReview={onDecideReview} onRefresh={onRefreshRepository} />
         <OutputTool active={panel === "terminal"} />
         <PlanTool active={panel === "plan"} task={task} />
       </div>

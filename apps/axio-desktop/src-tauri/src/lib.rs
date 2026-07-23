@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use axio_core::Workspace;
+use axio_core::{Workspace, discover_repository};
 use axio_protocol::{AgentStatus, WorkspaceSnapshot};
 use tauri::State;
 
@@ -15,6 +15,17 @@ fn workspace_snapshot(state: State<'_, AppState>) -> Result<WorkspaceSnapshot, S
         .lock()
         .map(|workspace| workspace.snapshot())
         .map_err(|error| format!("workspace state is unavailable: {error}"))
+}
+
+#[tauri::command]
+fn refresh_repository(state: State<'_, AppState>) -> Result<WorkspaceSnapshot, String> {
+    let repository = discover_repository().map_err(|error| error.to_string())?;
+    let mut workspace = state
+        .workspace
+        .lock()
+        .map_err(|error| format!("workspace state is unavailable: {error}"))?;
+    workspace.attach_repository(repository);
+    Ok(workspace.snapshot())
 }
 
 #[tauri::command]
@@ -47,10 +58,11 @@ fn create_task(title: String, state: State<'_, AppState>) -> Result<WorkspaceSna
 fn send_direction(
     task_id: String,
     message: String,
+    audience: String,
     state: State<'_, AppState>,
 ) -> Result<WorkspaceSnapshot, String> {
     mutate_workspace(state, |workspace| {
-        workspace.send_direction(&task_id, message)
+        workspace.send_direction(&task_id, message, audience)
     })
 }
 
@@ -96,12 +108,17 @@ fn window_action(action: String, window: tauri::WebviewWindow) -> Result<(), Str
 
 /// Starts the native desktop application.
 pub fn run() {
+    let mut workspace = Workspace::demo();
+    if let Ok(repository) = discover_repository() {
+        workspace.attach_repository(repository);
+    }
     tauri::Builder::default()
         .manage(AppState {
-            workspace: Mutex::new(Workspace::demo()),
+            workspace: Mutex::new(workspace),
         })
         .invoke_handler(tauri::generate_handler![
             workspace_snapshot,
+            refresh_repository,
             set_agent_status,
             select_task,
             create_task,

@@ -1,6 +1,6 @@
 use axio_protocol::{
-    ActivityKind, AgentStatus, ReviewStatus, TaskStatus, WorkspaceActivity, WorkspaceSnapshot,
-    WorkspaceTask,
+    ActivityKind, AgentStatus, RepositorySnapshot, ReviewStatus, TaskStatus, WorkspaceActivity,
+    WorkspaceSnapshot, WorkspaceTask,
 };
 
 use crate::{CoreError, lifecycle::can_transition};
@@ -22,6 +22,25 @@ impl Workspace {
     #[must_use]
     pub fn snapshot(&self) -> WorkspaceSnapshot {
         self.snapshot.clone()
+    }
+
+    /// Applies live repository metadata to the shared workspace snapshot.
+    pub fn attach_repository(&mut self, repository: RepositorySnapshot) {
+        self.snapshot.project.clone_from(&repository.name);
+        self.snapshot.branch.clone_from(&repository.branch);
+        if let Some(task) = self
+            .snapshot
+            .tasks
+            .iter_mut()
+            .find(|task| task.id == self.snapshot.selected_task)
+        {
+            task.worktree.clone_from(&repository.name);
+            task.changed_files = u32::try_from(repository.changes.len()).unwrap_or(u32::MAX);
+            if task.changed_files > 0 {
+                task.review = ReviewStatus::Pending;
+            }
+        }
+        self.snapshot.repository = Some(repository);
     }
 
     /// Applies a validated lifecycle transition to one agent.
@@ -99,7 +118,12 @@ impl Workspace {
     }
 
     /// Adds user direction to a task's chronological activity.
-    pub fn send_direction(&mut self, task_id: &str, message: String) -> Result<(), CoreError> {
+    pub fn send_direction(
+        &mut self,
+        task_id: &str,
+        message: String,
+        audience: String,
+    ) -> Result<(), CoreError> {
         if !self.snapshot.tasks.iter().any(|task| task.id == task_id) {
             return Err(CoreError::TaskNotFound(task_id.to_owned()));
         }
@@ -107,6 +131,12 @@ impl Workspace {
         if message.is_empty() {
             return Err(CoreError::EmptyDirection);
         }
+        let audience = audience.trim();
+        let audience = if audience.is_empty() {
+            "All agents"
+        } else {
+            audience
+        };
 
         self.snapshot.activity.push(WorkspaceActivity {
             id: next_activity_id(&self.snapshot),
@@ -114,7 +144,7 @@ impl Workspace {
             agent_id: None,
             kind: ActivityKind::Message,
             summary: message.to_owned(),
-            detail: Some("Direction queued for all task agents".to_owned()),
+            detail: Some(format!("Direction sent to {audience}")),
             timestamp: "now".to_owned(),
         });
         Ok(())

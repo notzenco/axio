@@ -37,7 +37,7 @@ export const defaultSettings: AppSettings = {
   workspace: {
     autoOpenReview: true,
     defaultContextPanel: "diff",
-    inspectorOnLaunch: false,
+    inspectorOnLaunch: true,
     showReviewBadge: true,
     showStatusBar: true,
     showToolbarLabels: true,

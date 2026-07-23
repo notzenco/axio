@@ -188,3 +188,194 @@ Interaction verification:
 - Browser console warnings/errors: none.
 
 final result: passed
+
+## Native live-repository slice — 2026-07-23
+
+The release executable was launched from the active Axio checkout and inspected
+through native Windows UI automation rather than the browser fallback.
+
+Verified native data:
+
+- Project `axio`, branch `main`, 169 tracked/untracked repository paths, and 47
+  working-tree changes matched the independently queried CLI JSON snapshot.
+- The status bar exposed `47 working tree changes` and opened Review.
+- Files displayed the real repository hierarchy beginning with `.cargo`,
+  `.github`, `AGENTS.md`, `apps`, and their descendants.
+- Files identified its source as the active Git repository and provided a
+  refresh action.
+- Review displayed 47 real changed paths, including `AGENTS.md` and the active
+  Rust and TypeScript files, with Git line totals where available.
+- Review labelled every unexecuted check `Not run` and disabled command
+  execution instead of reporting simulated passing checks as live results.
+- The refresh controls completed without an application error.
+
+The task narrative and agent workstreams remain deterministic demo state. The
+live repository surfaces are visually and textually distinguished from that
+simulation.
+
+**Findings**
+
+- No actionable P0/P1/P2 layout or interaction issue was found in the native
+  Files and Review flow.
+- Complete file contents, filesystem watching, unified diffs, and command
+  execution remain intentionally out of scope for this slice.
+
+final result: passed
+
+## Canvas workspace implementation QA — 2026-07-23
+
+Source visual truth:
+`docs/design/canvas-workspace-2026-07-23/approved-canvas-direction.png`.
+
+Rendered implementation:
+`docs/design/canvas-workspace-2026-07-23/implemented-canvas-review-1440x1024.png`.
+
+Normalized comparison:
+`docs/design/canvas-workspace-2026-07-23/approved-vs-implemented-1440x1024.png`.
+
+- Viewport and CSS size: 1440 x 1024 at 1x density.
+- Source pixels: 1487 x 1058, proportionally fitted and padded to 1440 x
+  1024 for comparison.
+- Captured implementation pixels: 1440 x 1024.
+- State: Canvas selected, workspace sidebar open, Review gate open in the
+  390px resizable context dock.
+- Full-view evidence: the comparison places the normalized approved direction
+  and browser-rendered implementation side by side.
+- Focused regions were unnecessary for the captured pass because navigation,
+  workstreams, phase path, review dock, and activity hierarchy remain readable
+  at the native comparison size.
+
+Startup regression evidence:
+`docs/design/canvas-workspace-2026-07-23/composer-startup-1280x720.png`.
+
+Interaction verification:
+
+- Activity and Canvas switch between distinct work modes.
+- Browser, Files, Terminal, and Plan each open their corresponding right-dock
+  surface and expose the correct pressed state.
+- The contextual review notice opens Review without expanding the dock.
+- The tool-call record collapses and reopens without losing its content.
+- The context dock restores from 640px to its 390px default.
+- On a clean 1280 x 720 launch, the composer is visible at y=570–673 before
+  either sidebar is touched.
+- The composer remains visible with both sidebars open, either sidebar closed,
+  both sidebars closed, after reopening them, and after keyboard-resizing the
+  context dock.
+- At 1440 x 1024, the composer is visible at y=874–977 and the document has
+  zero horizontal overflow.
+- Browser console warnings/errors were empty.
+- The page had no document-level horizontal overflow.
+
+Required fidelity surfaces:
+
+- Fonts and typography: the existing Inter/Segoe UI stack, weights, compact UI
+  scale, hierarchy, truncation, and monospaced command/file content match the
+  approved direction closely.
+- Spacing and layout rhythm: the narrow workspace rail, centered mode/tool
+  navigation, workflow path, parallel workstreams, persistent composer, and
+  resizable review dock are present at the intended proportions.
+- Colors and visual tokens: the calm navy/charcoal system with restrained
+  violet, cyan, amber, and green status accents is retained without excessive
+  glow.
+- Image quality and asset fidelity: the screen contains no raster product
+  imagery. All visible UI icons use the packaged Fluent icon library.
+- Copy and content: Activity/Canvas are work modes; Browser, Files, Terminal,
+  and Plan are tools; Review is contextual and terminal output remains inside
+  Terminal.
+
+Comparison history:
+
+- Initial captured pass found a P2 density mismatch in Recent activity: large
+  event cards displaced the compact durable-record pattern in the approved
+  direction.
+- The implementation was revised to a compact review record with an expanded
+  collapsible tool-call summary and concise verified activity rows.
+- A startup P1 was then reproduced at 1280 x 720: the workspace grid row was
+  647px tall while its three grid children expanded to 811px from their
+  intrinsic content, placing the composer below the viewport until a sidebar
+  change forced a layout recalculation.
+- The workspace now declares a bounded `minmax(0, 1fr)` grid row and each
+  direct panel child explicitly accepts the available height. Post-fix
+  measurements keep all three children at 627px and the composer visible
+  before any interaction.
+- TypeScript, Vite, Rust lint/tests, formatting, and the integrated Tauri
+  release build pass after the fix.
+
+**Findings**
+
+- No actionable P0/P1/P2 differences remain in the captured Canvas/Review
+  state. The implementation intentionally uses slightly quieter surface
+  borders than the generated reference; this is acceptable within the
+  existing Axio token system.
+
+**Implementation Checklist**
+
+- Keep the explicit bounded grid row when adding new persistent workspace
+  panels.
+- Retain startup composer visibility in future responsive regression checks.
+
+final result: passed
+
+## Activity message-order regression — 2026-07-23
+
+Reported visual:
+`docs/design/canvas-workspace-2026-07-23/message-order-reported-1920x1032.png`.
+
+The supplied Activity capture shows newly sent messages above the existing
+history. Browser reproduction confirmed the incorrect visible sequence:
+`second chronological check`, `first chronological check`, then the older
+review and agent activity.
+
+Root cause:
+
+- The Rust workspace and browser fallback both append direction events to the
+  chronological activity array.
+- `Timeline` reversed that array before rendering, while the send path scrolled
+  to the final rendered element. Those two behaviors disagreed.
+
+Fix and regression coverage:
+
+- Activity now renders the append-order task events directly, so the newest
+  event is the final timeline child.
+- `activityForTask` owns task filtering without reordering.
+- `ui/tests/activity-order.test.ts` proves `first`, `second`, `newest` remains
+  in that order.
+- `bun run --cwd apps/axio-desktop test:ui`: 1 passed.
+- TypeScript, Vite, and the integrated Tauri release build pass.
+
+Post-fix browser verification now confirms the rendered timeline preserves
+append order. The initial tool, change, and approval records remain first;
+the first sent direction follows them; and each newer direction renders after
+the preceding one at the bottom of the activity.
+
+**Findings**
+
+- No actionable message-order issue remains.
+
+final result: passed
+
+## Canvas direction destination feedback — 2026-07-23
+
+Rendered evidence:
+`docs/design/canvas-workspace-2026-07-23/canvas-direction-destination.png`.
+
+The Canvas composer was exercised at 1600 x 900 with both the all-agent and
+individual-agent targets.
+
+- The transient confirmation names the selected audience and task, for
+  example `Sent to Claude Code · Unify the Axio desktop`.
+- Canvas Recent activity immediately retains the two latest user directions
+  with `You → destination`, the message text, and a sent state.
+- Selecting a durable direction row opens the complete Activity record.
+- Activity renders the same messages at the bottom in chronological order and
+  retains `Direction sent to All agents` or the selected agent.
+- The selected audience is passed through the TypeScript service, Tauri
+  command, and Rust workspace record rather than being replaced by a fixed
+  all-agent label.
+- Browser console errors and warnings were empty.
+
+**Findings**
+
+- No actionable P0/P1/P2 differences remain in the destination-feedback flow.
+
+final result: passed

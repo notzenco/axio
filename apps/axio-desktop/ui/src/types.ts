@@ -34,6 +34,22 @@ export interface WorkspaceActivity {
   timestamp: string;
 }
 
+export interface RepositoryChange {
+  path: string;
+  status: string;
+  additions?: number | null;
+  deletions?: number | null;
+}
+
+export interface RepositorySnapshot {
+  root: string;
+  name: string;
+  branch: string;
+  files: string[];
+  files_truncated: boolean;
+  changes: RepositoryChange[];
+}
+
 export interface WorkspaceSnapshot {
   project: string;
   branch: string;
@@ -41,7 +57,9 @@ export interface WorkspaceSnapshot {
   tasks: WorkspaceTask[];
   selected_task: string;
   activity: WorkspaceActivity[];
+  repository?: RepositorySnapshot | null;
 }
 
 export type SidebarPanel = "tasks" | "agents";
 export type ContextPanel = "browser" | "files" | "diff" | "terminal" | "plan";
+export type WorkMode = "activity" | "canvas";

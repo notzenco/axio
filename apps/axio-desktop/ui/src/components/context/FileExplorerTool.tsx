@@ -1,22 +1,24 @@
-import { useState, type CSSProperties } from "react";
-import { Code20Regular, Document20Regular, Folder20Regular, Search20Regular } from "@fluentui/react-icons";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { ArrowClockwise20Regular, Code20Regular, Document20Regular, Folder20Regular, Search20Regular } from "@fluentui/react-icons";
+import { repositoryTree } from "../../data/repository-tree";
+import type { RepositorySnapshot } from "../../types";
 
-const files = [
-  { depth: 0, folder: true, name: "apps", path: "apps" },
-  { depth: 1, folder: true, name: "axio-desktop", path: "apps/axio-desktop" },
-  { depth: 2, folder: true, name: "ui", path: "apps/axio-desktop/ui" },
-  { depth: 3, folder: false, name: "App.tsx", path: "apps/axio-desktop/ui/src/App.tsx" },
-  { depth: 3, folder: false, name: "styles.css", path: "apps/axio-desktop/ui/styles.css" },
-  { depth: 0, folder: true, name: "crates", path: "crates" },
-  { depth: 1, folder: true, name: "axio-core", path: "crates/axio-core" },
-  { depth: 2, folder: false, name: "lib.rs", path: "crates/axio-core/src/lib.rs" },
-  { depth: 0, folder: false, name: "Cargo.toml", path: "Cargo.toml" },
-] as const;
+const previewFiles = [
+  "apps/axio-desktop/ui/src/App.tsx",
+  "apps/axio-desktop/ui/styles.css",
+  "crates/axio-core/src/lib.rs",
+  "Cargo.toml",
+];
 
-export function FileExplorerTool({ active }: { active: boolean }) {
-  const [selected, setSelected] = useState("apps/axio-desktop/ui/src/App.tsx");
+export function FileExplorerTool({ active, onRefresh, repository }: { active: boolean; onRefresh: () => void; repository?: RepositorySnapshot | null }) {
+  const paths = repository?.files ?? previewFiles;
+  const [selected, setSelected] = useState(paths[0] ?? "");
   const [query, setQuery] = useState("");
-  const visible = files.filter((entry) => entry.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const visible = useMemo(() => repositoryTree(paths, query), [paths, query]);
+
+  useEffect(() => {
+    if (!selected || !paths.includes(selected)) setSelected(paths[0] ?? "");
+  }, [paths, selected]);
 
   return (
     <section className={`inspector-panel files-panel${active ? " active" : ""}`} id="panel-files" role="tabpanel">
@@ -26,9 +28,12 @@ export function FileExplorerTool({ active }: { active: boolean }) {
       </div>
       <div className="file-preview">
         <span className="eyebrow">Selected file</span><strong>{selected}</strong>
-        <p>File contents will stream from the active worktree through the native workspace service.</p>
+        <p>{repository ? "Discovered from the active Git repository. Content preview is the next filesystem boundary." : "Preview data. Launch the native desktop build to inspect a real repository."}</p>
       </div>
-      <footer className="tool-status"><span>Active worktree</span><span>Read-only preview</span></footer>
+      <footer className="tool-status">
+        <span><i className={repository ? "live" : ""}></i>{repository ? `${repository.files.length}${repository.files_truncated ? "+" : ""} files` : "Preview data"}</span>
+        <button type="button" onClick={onRefresh}><ArrowClockwise20Regular /> Refresh</button>
+      </footer>
     </section>
   );
 }

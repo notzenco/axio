@@ -22,7 +22,10 @@
 .window-controls button { border-radius: 0; background: transparent; color: #8992a0; }
 .window-controls button:hover { background: rgba(255,255,255,.075); color: white; }
 .window-controls .window-close:hover { background: #c42b3a; }
-.workspace-shell { position: relative; min-height: 0; display: grid; grid-template-columns: var(--sidebar-width) minmax(420px,1fr) var(--context-width); gap: 10px; padding: 10px; overflow: hidden; transition: grid-template-columns .2s cubic-bezier(.2,.75,.2,1); }
+.workspace-shell { position: relative; min-height: 0; display: grid; grid-template-columns: var(--sidebar-width) minmax(420px,1fr) var(--context-width); grid-template-rows: minmax(0,1fr); gap: 10px; padding: 10px; overflow: hidden; transition: grid-template-columns .2s cubic-bezier(.2,.75,.2,1); }
+.workspace-shell > .sidebar,
+.workspace-shell > .task-canvas,
+.workspace-shell > .inspector { min-height: 0; height: 100%; }
 .statusbar { z-index: 20; display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 8px; border-top: 1px solid var(--line); background: rgba(7,9,14,.78); backdrop-filter: blur(24px); color: #737c8a; font-size: 8px; user-select: none; }
 .statusbar > span, .statusbar button { display: flex; gap: 6px; align-items: center; height: 21px; padding: 0 7px; border-radius: 6px; background: transparent; color: inherit; white-space: nowrap; }
 .statusbar button:hover { background: rgba(255,255,255,.055); color: #bcc2cc; }

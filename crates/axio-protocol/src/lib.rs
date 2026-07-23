@@ -91,6 +91,26 @@ pub struct WorkspaceActivity {
     pub timestamp: String,
 }
 
+/// One changed path reported by the active Git repository.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RepositoryChange {
+    pub path: String,
+    pub status: String,
+    pub additions: Option<u32>,
+    pub deletions: Option<u32>,
+}
+
+/// A bounded, read-only view of the Git repository backing the workspace.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RepositorySnapshot {
+    pub root: String,
+    pub name: String,
+    pub branch: String,
+    pub files: Vec<String>,
+    pub files_truncated: bool,
+    pub changes: Vec<RepositoryChange>,
+}
+
 /// A serializable view of the current local workspace.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkspaceSnapshot {
@@ -100,4 +120,5 @@ pub struct WorkspaceSnapshot {
     pub tasks: Vec<WorkspaceTask>,
     pub selected_task: String,
     pub activity: Vec<WorkspaceActivity>,
+    pub repository: Option<RepositorySnapshot>,
 }

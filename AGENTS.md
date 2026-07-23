@@ -7,6 +7,7 @@
 - `cargo test --workspace --locked` - complete Rust test suite.
 - `cargo run -p axio-cli -- status --json` - CLI smoke test.
 - `node scripts/check-ui.mjs` - type-check the desktop TypeScript application.
+- `bun run --cwd apps/axio-desktop test:ui` - run focused desktop UI tests.
 - `bun run --cwd apps/axio-desktop build:vite` - build the React UI.
 - `bun run --cwd apps/axio-desktop dev` - run Vite and the Tauri desktop shell.
 - `cargo build --release -p axio-desktop --locked` - native release build.

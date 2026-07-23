@@ -1,4 +1,4 @@
-use axio_protocol::{AgentStatus, ReviewStatus, TaskStatus};
+use axio_protocol::{AgentStatus, RepositoryChange, RepositorySnapshot, ReviewStatus, TaskStatus};
 
 use crate::{CoreError, Workspace};
 
@@ -54,11 +54,47 @@ fn task_creation_selects_a_reviewable_boundary() {
 }
 
 #[test]
+fn repository_metadata_enriches_the_selected_task() {
+    let mut workspace = Workspace::demo();
+
+    workspace.attach_repository(RepositorySnapshot {
+        root: "C:/work/axio".to_owned(),
+        name: "axio".to_owned(),
+        branch: "feature/live-repository".to_owned(),
+        files: vec!["Cargo.toml".to_owned()],
+        files_truncated: false,
+        changes: vec![RepositoryChange {
+            path: "Cargo.toml".to_owned(),
+            status: "M".to_owned(),
+            additions: Some(1),
+            deletions: Some(0),
+        }],
+    });
+
+    let snapshot = workspace.snapshot();
+    assert_eq!(snapshot.project, "axio");
+    assert_eq!(snapshot.branch, "feature/live-repository");
+    assert_eq!(snapshot.tasks[0].changed_files, 1);
+    assert_eq!(
+        snapshot
+            .repository
+            .expect("repository should be attached")
+            .files
+            .len(),
+        1
+    );
+}
+
+#[test]
 fn direction_and_review_are_recorded_in_the_task_narrative() {
     let mut workspace = Workspace::demo();
 
     workspace
-        .send_direction("desktop", "Use the real Tauri window".to_owned())
+        .send_direction(
+            "desktop",
+            "Use the real Tauri window".to_owned(),
+            "Codex".to_owned(),
+        )
         .expect("direction should be accepted");
     workspace
         .review_task("desktop", true)
@@ -68,4 +104,8 @@ fn direction_and_review_are_recorded_in_the_task_narrative() {
     assert_eq!(snapshot.tasks[0].status, TaskStatus::Completed);
     assert_eq!(snapshot.tasks[0].review, ReviewStatus::Approved);
     assert_eq!(snapshot.activity.len(), 6);
+    assert_eq!(
+        snapshot.activity[4].detail.as_deref(),
+        Some("Direction sent to Codex")
+    );
 }
