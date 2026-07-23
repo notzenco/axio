@@ -6,8 +6,8 @@ use axio_core::{
     Workspace, WorkspaceCatalog, WorkspaceStore, open_repository, read_repository_file as read_file,
 };
 use axio_protocol::{
-    AgentStatus, RepositoryFileContent, TerminalOutputSnapshot, TerminalProvider,
-    TerminalSessionSnapshot, WorkspaceLifecycleSnapshot, WorkspaceSnapshot,
+    AgentStatus, RepositoryFileContent, RepositorySnapshot, TerminalOutputSnapshot,
+    TerminalProvider, TerminalSessionSnapshot, WorkspaceLifecycleSnapshot, WorkspaceSnapshot,
 };
 use tauri::{Manager, State};
 use tauri_plugin_dialog::DialogExt;
@@ -131,14 +131,21 @@ fn remove_recent_workspace(
 }
 
 #[tauri::command]
-fn refresh_repository(state: State<'_, AppState>) -> Result<WorkspaceSnapshot, String> {
-    let mut runtime = lock_runtime(&state)?;
-    let path = runtime
+async fn refresh_repository(state: State<'_, AppState>) -> Result<WorkspaceSnapshot, String> {
+    let path = lock_runtime(&state)?
         .catalog
         .active_workspace
         .clone()
         .ok_or_else(|| "no active workspace is available".to_owned())?;
-    let repository = open_repository(path).map_err(|error| error.to_string())?;
+    let refresh_path = path.clone();
+    let repository = tauri::async_runtime::spawn_blocking(move || open_repository(refresh_path))
+        .await
+        .map_err(|error| format!("repository refresh did not complete: {error}"))?
+        .map_err(|error| error.to_string())?;
+    let mut runtime = lock_runtime(&state)?;
+    if runtime.catalog.active_workspace.as_deref() != Some(path.as_str()) {
+        return Ok(runtime.workspace.snapshot());
+    }
     let mut workspace = runtime.workspace.clone();
     workspace.attach_repository(repository);
     let mut catalog = runtime.catalog.clone();
@@ -398,32 +405,41 @@ impl WorkspaceRuntime {
 
 fn initialize_runtime(state_directory: PathBuf) -> WorkspaceRuntime {
     let store = WorkspaceStore::new(state_directory);
-    let (mut catalog, mut warning) = match store.load() {
+    let (catalog, warning) = match store.load() {
         Ok(catalog) => (catalog, None),
         Err(error) => (WorkspaceCatalog::default(), Some(error.to_string())),
     };
     let mut workspace = Workspace::empty();
     if let Some(path) = catalog.active_workspace.clone() {
-        match open_repository(&path) {
-            Ok(repository) => {
-                workspace = workspace_for_repository(&catalog, repository);
-            }
-            Err(error) => {
-                warning = Some(format!(
-                    "The previous workspace could not be restored: {error}"
-                ));
-                catalog.close();
-                if let Err(error) = store.save(&catalog) {
-                    warning = Some(error.to_string());
-                }
-            }
-        }
+        workspace = workspace_for_repository(&catalog, cached_repository(&catalog, &path));
     }
     WorkspaceRuntime {
         workspace,
         catalog,
         store,
         persistence_warning: warning,
+    }
+}
+
+fn cached_repository(catalog: &WorkspaceCatalog, path: &str) -> RepositorySnapshot {
+    let name = catalog
+        .recent_workspaces
+        .iter()
+        .find(|workspace| workspace.path == path)
+        .map(|workspace| workspace.name.clone())
+        .or_else(|| {
+            PathBuf::from(path)
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
+        .unwrap_or_else(|| "repository".to_owned());
+    RepositorySnapshot {
+        root: path.to_owned(),
+        name,
+        branch: "loading".to_owned(),
+        files: Vec::new(),
+        files_truncated: false,
+        changes: Vec::new(),
     }
 }
 
@@ -517,6 +533,48 @@ mod tests {
         assert!(restored.activity.iter().any(|activity| {
             activity.task_id == "task-3" && activity.summary == "Persist this direction"
         }));
+
+        fs::remove_dir_all(directory).expect("test state should be removed");
+    }
+
+    #[test]
+    fn runtime_restores_cached_workspace_without_inspecting_git() {
+        let directory = test_directory();
+        let missing_root = directory.join("repository-that-is-not-on-disk");
+        let repository = RepositorySnapshot {
+            root: missing_root.to_string_lossy().into_owned(),
+            name: "cached-project".to_owned(),
+            branch: "main".to_owned(),
+            files: vec!["src/main.rs".to_owned()],
+            files_truncated: false,
+            changes: Vec::new(),
+        };
+        let mut workspace = Workspace::demo();
+        workspace.attach_repository(repository.clone());
+        let mut catalog = WorkspaceCatalog::default();
+        catalog.open(&repository);
+        catalog.capture(&workspace.snapshot());
+        WorkspaceStore::new(&directory)
+            .save(&catalog)
+            .expect("cached workspace should save");
+
+        let runtime = initialize_runtime(directory.clone());
+        let restored = runtime.workspace.snapshot();
+
+        assert_eq!(
+            restored
+                .repository
+                .as_ref()
+                .expect("cached repository should restore")
+                .root,
+            repository.root
+        );
+        assert_eq!(restored.project, "cached-project");
+        assert_eq!(restored.branch, "loading");
+        assert_eq!(
+            runtime.catalog.active_workspace.as_deref(),
+            Some(repository.root.as_str())
+        );
 
         fs::remove_dir_all(directory).expect("test state should be removed");
     }
