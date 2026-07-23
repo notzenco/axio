@@ -25,10 +25,9 @@ fn main() -> ExitCode {
 }
 
 fn print_status(json: bool) -> ExitCode {
-    let mut workspace = Workspace::demo();
-    if let Ok(repository) = discover_repository() {
-        workspace.attach_repository(repository);
-    }
+    let workspace = discover_repository()
+        .map(Workspace::for_repository)
+        .unwrap_or_else(|_| Workspace::empty());
     let snapshot = workspace.snapshot();
 
     if json {

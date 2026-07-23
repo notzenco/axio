@@ -11,8 +11,8 @@ export const contextTools = [
   { id: "browser", icon: Globe20Regular, label: "Browser", title: "Task browser" },
   { id: "files", icon: Folder20Regular, label: "Files", title: "File explorer" },
   { id: "diff", icon: CodeText20Regular, label: "Review", title: "Review gate" },
-  { id: "terminal", icon: WindowConsole20Regular, label: "Terminal", title: "Live terminal" },
-  { id: "plan", icon: ClipboardTaskListLtr20Regular, label: "Plan", title: "Task plan" },
+  { id: "output", icon: WindowConsole20Regular, label: "Output", title: "Session output" },
+  { id: "plan", icon: ClipboardTaskListLtr20Regular, label: "State", title: "Task state" },
 ] satisfies { id: ContextPanel; icon: typeof Globe20Regular; label: string; title: string }[];
 
 export const workspaceTools = contextTools.filter((tool) => tool.id !== "diff");

@@ -1,6 +1,6 @@
 use axio_protocol::{
-    ActivityKind, AgentKind, AgentSession, AgentStatus, ReviewStatus, TaskStatus,
-    WorkspaceActivity, WorkspaceSnapshot, WorkspaceTask,
+    ActivityKind, AgentKind, AgentSession, AgentStatus, RepositorySnapshot, ReviewStatus,
+    TaskStatus, WorkspaceActivity, WorkspaceSnapshot, WorkspaceTask,
 };
 
 use crate::Workspace;
@@ -20,7 +20,48 @@ impl Workspace {
         })
     }
 
-    /// Provides deterministic state for the first desktop and CLI shell.
+    /// Creates an honest first task boundary for a repository without
+    /// manufacturing agent progress, commands, or review history.
+    #[must_use]
+    pub fn for_repository(repository: RepositorySnapshot) -> Self {
+        let changed_files = u32::try_from(repository.changes.len()).unwrap_or(u32::MAX);
+        let review = if changed_files > 0 {
+            ReviewStatus::Pending
+        } else {
+            ReviewStatus::None
+        };
+        let name = repository.name.clone();
+        let root = repository.root.clone();
+        let branch = repository.branch.clone();
+        Self::new(WorkspaceSnapshot {
+            project: name.clone(),
+            branch,
+            agents: Vec::new(),
+            tasks: vec![WorkspaceTask {
+                id: "workspace".to_owned(),
+                title: format!("{name} workspace"),
+                status: TaskStatus::Active,
+                worktree: name,
+                agent_ids: Vec::new(),
+                unread: 0,
+                changed_files,
+                review,
+            }],
+            selected_task: "workspace".to_owned(),
+            activity: vec![WorkspaceActivity {
+                id: "activity-1".to_owned(),
+                task_id: "workspace".to_owned(),
+                agent_id: None,
+                kind: ActivityKind::Status,
+                summary: "Repository opened".to_owned(),
+                detail: Some(root),
+                timestamp: "now".to_owned(),
+            }],
+            repository: Some(repository),
+        })
+    }
+
+    /// Provides deterministic legacy state for compatibility and transition tests.
     #[must_use]
     pub fn demo() -> Self {
         Self::new(WorkspaceSnapshot {

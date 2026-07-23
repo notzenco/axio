@@ -11,16 +11,16 @@ interface Props {
 
 export function WorkspaceSettings({ onChange, query, settings }: Props) {
   const sidebar = matchesSetting(query, "sidebar workspace launch startup open");
-  const inspector = matchesSetting(query, "dock context browser files review terminal plan launch startup open");
+  const inspector = matchesSetting(query, "dock context browser files review output state plan launch startup open");
   const review = matchesSetting(query, "review changes automatic inspector attention");
   const toolbar = matchesSetting(query, "toolbar navigation labels icons review badge count");
-  const defaultTool = matchesSetting(query, "default context tool browser files review terminal plan startup");
+  const defaultTool = matchesSetting(query, "default context tool browser files review output state plan startup");
   const status = matchesSetting(query, "status bar footer health branch checks");
   if (!sidebar && !inspector && !review && !toolbar && !defaultTool && !status) return null;
   return <SettingSection icon={<PanelLeft20Regular />} title="Workspace" description="Choose what Axio shows when you begin and review work.">
     {sidebar && <SettingSwitch label="Open workspace sidebar" description="Show tasks and worktrees when Axio starts" checked={settings.sidebarOnLaunch} onChange={(sidebarOnLaunch) => onChange({ sidebarOnLaunch })} />}
-    {inspector && <SettingSwitch label="Open context dock" description="Keep the selected Browser, Files, Terminal, or Plan tool visible" checked={settings.inspectorOnLaunch} onChange={(inspectorOnLaunch) => onChange({ inspectorOnLaunch })} />}
-    {defaultTool && <SettingSelect label="Default context tool" description="Choose which tool or review context is selected when Axio starts" value={settings.defaultContextPanel} onChange={(defaultContextPanel) => onChange({ defaultContextPanel: defaultContextPanel as ContextPanel })}><option value="browser">Browser</option><option value="files">Files</option><option value="terminal">Terminal</option><option value="plan">Plan</option><option value="diff">Review when required</option></SettingSelect>}
+    {inspector && <SettingSwitch label="Open context dock" description="Keep the selected Browser, Files, Output, State, or Review context visible" checked={settings.inspectorOnLaunch} onChange={(inspectorOnLaunch) => onChange({ inspectorOnLaunch })} />}
+    {defaultTool && <SettingSelect label="Default context tool" description="Choose which tool or review context is selected when Axio starts" value={settings.defaultContextPanel} onChange={(defaultContextPanel) => onChange({ defaultContextPanel: defaultContextPanel as ContextPanel })}><option value="browser">Browser</option><option value="files">Files</option><option value="output">Output</option><option value="plan">Task state</option><option value="diff">Review when required</option></SettingSelect>}
     {review && <SettingSwitch label="Open pending reviews automatically" description="Reveal the review inspector when selecting a task that needs attention" checked={settings.autoOpenReview} onChange={(autoOpenReview) => onChange({ autoOpenReview })} />}
     {toolbar && <SettingSwitch label="Show toolbar labels" description="Show text beside task toolbar icons when space allows" checked={settings.showToolbarLabels} onChange={(showToolbarLabels) => onChange({ showToolbarLabels })} />}
     {toolbar && <SettingSwitch label="Show contextual review notice" description="Display the changed-file notice when a review gate needs attention" checked={settings.showReviewBadge} onChange={(showReviewBadge) => onChange({ showReviewBadge })} />}

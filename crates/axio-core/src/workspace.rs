@@ -21,6 +21,10 @@ impl Workspace {
     /// Restores repository-scoped state and refreshes its live Git metadata.
     #[must_use]
     pub fn restore(session: WorkspaceSession, repository: RepositorySnapshot) -> Self {
+        let session = normalize_legacy_preview_session(session);
+        if session.tasks.is_empty() {
+            return Self::for_repository(repository);
+        }
         let selected_task = if session
             .tasks
             .iter()
@@ -62,7 +66,6 @@ impl Workspace {
             .iter_mut()
             .find(|task| task.id == self.snapshot.selected_task)
         {
-            task.worktree.clone_from(&repository.name);
             task.changed_files = u32::try_from(repository.changes.len()).unwrap_or(u32::MAX);
             if task.changed_files > 0 {
                 task.review = ReviewStatus::Pending;
@@ -116,7 +119,7 @@ impl Workspace {
         Ok(())
     }
 
-    /// Creates and selects a task with an isolated worktree boundary.
+    /// Creates and selects a local task boundary.
     pub fn create_task(&mut self, title: String) -> Result<(), CoreError> {
         let title = title.trim();
         if title.is_empty() {
@@ -148,7 +151,7 @@ impl Workspace {
             task_id: id.clone(),
             agent_id: None,
             kind: ActivityKind::Status,
-            summary: "Task created with an isolated worktree".to_owned(),
+            summary: "Task created".to_owned(),
             detail: Some("Ready to receive direction".to_owned()),
             timestamp: "now".to_owned(),
         });
@@ -171,8 +174,8 @@ impl Workspace {
             return Err(CoreError::EmptyDirection);
         }
         let audience = audience.trim();
-        let audience = if audience.is_empty() {
-            "All agents"
+        let destination = if audience.is_empty() {
+            "Task log"
         } else {
             audience
         };
@@ -183,7 +186,7 @@ impl Workspace {
             agent_id: None,
             kind: ActivityKind::Message,
             summary: message.to_owned(),
-            detail: Some(format!("Direction sent to {audience}")),
+            detail: Some(format!("Recorded in {destination}")),
             timestamp: "now".to_owned(),
         });
         Ok(())
@@ -228,6 +231,58 @@ impl Workspace {
         });
         Ok(())
     }
+}
+
+fn normalize_legacy_preview_session(mut session: WorkspaceSession) -> WorkspaceSession {
+    let legacy_task = |task: &WorkspaceTask| {
+        (task.id == "desktop" && task.title == "Unify the Axio desktop")
+            || (task.id == "protocol" && task.title == "Agent protocol refactor")
+    };
+    let legacy_agent = |id: &str| id == "codex-01" || id == "claude-01";
+    let has_legacy_preview = session.tasks.iter().any(legacy_task)
+        && session.agents.iter().any(|agent| legacy_agent(&agent.id));
+    if !has_legacy_preview {
+        return session;
+    }
+
+    session.tasks.retain(|task| !legacy_task(task));
+    session.agents.retain(|agent| !legacy_agent(&agent.id));
+    let task_ids: Vec<String> = session.tasks.iter().map(|task| task.id.clone()).collect();
+    let agent_ids: Vec<String> = session
+        .agents
+        .iter()
+        .map(|agent| agent.id.clone())
+        .collect();
+    for task in &mut session.tasks {
+        task.agent_ids
+            .retain(|agent_id| agent_ids.contains(agent_id));
+    }
+    session
+        .activity
+        .retain(|activity| task_ids.contains(&activity.task_id));
+    for activity in &mut session.activity {
+        if activity.summary == "Task created with an isolated worktree" {
+            activity.summary = "Task created".to_owned();
+        }
+        if activity
+            .detail
+            .as_deref()
+            .is_some_and(|detail| detail.starts_with("Direction sent to "))
+        {
+            activity.detail = Some("Recorded in Task log".to_owned());
+        }
+    }
+    if !session
+        .tasks
+        .iter()
+        .any(|task| task.id == session.selected_task)
+    {
+        session.selected_task = session
+            .tasks
+            .first()
+            .map_or_else(String::new, |task| task.id.clone());
+    }
+    session
 }
 
 fn next_activity_id(snapshot: &WorkspaceSnapshot) -> String {

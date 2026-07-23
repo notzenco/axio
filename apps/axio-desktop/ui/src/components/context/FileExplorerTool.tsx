@@ -60,10 +60,10 @@ export function FileExplorerTool({ active, onRefresh, repository }: { active: bo
             <pre className="repository-file-content"><code>{preview.content}</code></pre>
           </>
         )}
-        {!loading && !preview && !previewError && <p>{repository ? "Select a file to load a safe, read-only preview." : "Preview data. Launch the native desktop build to inspect a real repository."}</p>}
+        {!loading && !preview && !previewError && <p>{repository ? "Select a file to load a safe, read-only preview." : "Repository files are unavailable outside an open native workspace."}</p>}
       </div>
       <footer className="tool-status">
-        <span><i className={repository ? "live" : ""}></i>{repository ? `${repository.files.length}${repository.files_truncated ? "+" : ""} files` : "Preview data"}</span>
+        <span><i className={repository ? "live" : ""}></i>{repository ? `${repository.files.length}${repository.files_truncated ? "+" : ""} files` : "Repository unavailable"}</span>
         <button type="button" onClick={onRefresh}><ArrowClockwise20Regular /> Refresh</button>
       </footer>
     </section>

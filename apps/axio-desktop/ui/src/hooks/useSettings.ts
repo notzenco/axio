@@ -53,6 +53,13 @@ const accents: Record<AccentColor, [string, string]> = {
   violet: ["#9a7cff", "#7959f4"],
 };
 
+export function normalizeContextPanel(value: unknown): ContextPanel {
+  if (value === "terminal") return "output";
+  return ["browser", "files", "diff", "output", "plan"].includes(String(value))
+    ? value as ContextPanel
+    : defaultSettings.workspace.defaultContextPanel;
+}
+
 function loadSettings(): AppSettings {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as Partial<AppSettings> | null;
@@ -61,7 +68,11 @@ function loadSettings(): AppSettings {
         accessibility: { ...defaultSettings.accessibility, ...saved.accessibility },
         appearance: { ...defaultSettings.appearance, ...saved.appearance },
         composer: { ...defaultSettings.composer, ...saved.composer },
-        workspace: { ...defaultSettings.workspace, ...saved.workspace },
+        workspace: {
+          ...defaultSettings.workspace,
+          ...saved.workspace,
+          defaultContextPanel: normalizeContextPanel(saved.workspace?.defaultContextPanel),
+        },
       };
     }
     const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) ?? "null");

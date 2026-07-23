@@ -19,7 +19,7 @@ interface CommandPaletteProps {
 }
 
 const commands: { id: string; icon: ComponentType; name: string; detail: string }[] = [
-  { id: "new", icon: Add20Regular, name: "New task", detail: "Define an outcome and isolated worktree" },
+  { id: "new", icon: Add20Regular, name: "New task", detail: "Define an outcome and local task boundary" },
   { id: "focus", icon: FullScreenMaximize20Regular, name: "Toggle focus mode", detail: "Hide workspace navigation and context tools" },
   { id: "review", icon: CodeText20Regular, name: "Open review", detail: "Inspect the current local changes" },
   { id: "settings", icon: Settings20Regular, name: "Settings", detail: "Customise appearance, workspace, composer, and accessibility" },

@@ -1,20 +1,17 @@
 import { Checkmark12Regular } from "@fluentui/react-icons";
-import type { WorkspaceTask } from "../../types";
+import { taskStateSteps } from "../../data/task-runtime";
+import type { TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../../types";
 
-export function PlanTool({ active, task }: { active: boolean; task: WorkspaceTask }) {
-  const steps = [
-    ["Define the product boundary", "Done", "done"],
-    ["Design the unified shell", "Done", "done"],
-    ["Connect local task state", "Done", "done"],
-    ["Add review gates", "Done", "done"],
-    ["Verify native interactions", "In progress", "active"],
-    ["Prepare the release", "Queued", ""],
-  ];
+export function PlanTool({ active, sessions, snapshot, task }: { active: boolean; sessions: TerminalSessionSnapshot[]; snapshot: WorkspaceSnapshot; task: WorkspaceTask }) {
+  const steps = taskStateSteps(snapshot, task, sessions);
+  const completed = steps.filter((step) => step.state === "done").length;
+  const progress = `${Math.round((completed / steps.length) * 100)}%`;
   return (
     <section className={`inspector-panel plan-panel${active ? " active" : ""}`} id="panel-plan" role="tabpanel">
-      <div className="plan-heading"><div><span className="eyebrow">Read-only plan</span><strong>{task.title}</strong></div><span>4 / 6</span></div>
-      <p className="plan-source">Demo task plan · state is derived from local activity</p><div className="plan-meter"><i></i></div>
-      <ol>{steps.map(([label, status, state], index) => <li className={state} key={label}><i className="plan-step-marker">{state === "done" ? <Checkmark12Regular /> : index + 1}</i><span>{label}</span><small>{status}</small></li>)}</ol>
+      <div className="plan-heading"><div><span className="eyebrow">Live task state</span><strong>{task.title}</strong></div><span>{completed} / {steps.length}</span></div>
+      <p className="plan-source">Derived from the selected repository, task, terminal sessions, and review gate.</p>
+      <div className="plan-meter"><i style={{ width: progress }}></i></div>
+      <ol>{steps.map(({ label, status, state }, index) => <li className={state} key={label}><i className="plan-step-marker">{state === "done" ? <Checkmark12Regular /> : index + 1}</i><span>{label}</span><small>{status}</small></li>)}</ol>
     </section>
   );
 }

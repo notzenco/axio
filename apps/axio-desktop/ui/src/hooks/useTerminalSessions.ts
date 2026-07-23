@@ -14,7 +14,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!isNative) {
+    if (!isNative || !taskId) {
       setSessions([]);
       return;
     }
@@ -26,6 +26,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
   }, [onError, taskId]);
 
   useEffect(() => {
+    setSessions([]);
     void refresh();
     let disposed = false;
     let unlisten = () => {};
@@ -80,3 +81,5 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
 
   return { busy, close, refresh, sessions, spawn, stop };
 }
+
+export type TerminalSessionController = ReturnType<typeof useTerminalSessions>;

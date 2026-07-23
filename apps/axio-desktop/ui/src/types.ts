@@ -113,5 +113,5 @@ export interface TerminalExitEvent {
 }
 
 export type SidebarPanel = "tasks" | "agents";
-export type ContextPanel = "browser" | "files" | "diff" | "terminal" | "plan";
+export type ContextPanel = "browser" | "files" | "diff" | "output" | "plan";
 export type WorkMode = "activity" | "canvas" | "terminal";

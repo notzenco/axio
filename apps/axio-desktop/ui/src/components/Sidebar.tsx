@@ -1,11 +1,13 @@
-import type { AgentSession, WorkspaceSnapshot, WorkspaceTask } from "../types";
+import { agentRuntimes } from "../data/task-runtime";
+import { terminalProviderLabel } from "../data/terminal-providers";
+import type { TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../types";
 import { Add20Regular, ChevronDown12Regular } from "@fluentui/react-icons";
 import { panelSizeLimits } from "../hooks/usePanelSizes";
 import { PanelResizeHandle } from "./PanelResizeHandle";
 
 interface SidebarProps {
   onSelectTask: (id: string) => void;
-  onTransitionAgent: (agent: AgentSession) => void;
+  onOpenTerminal: () => void;
   onResize: (width: number) => void;
   onNewTask: () => void;
   onOpenWorkspace: () => void;
@@ -13,6 +15,8 @@ interface SidebarProps {
   onPanelChange: (panel: "tasks" | "agents") => void;
   panel: "tasks" | "agents";
   snapshot: WorkspaceSnapshot;
+  sessions: TerminalSessionSnapshot[];
+  task?: WorkspaceTask;
   width: number;
 }
 
@@ -26,8 +30,12 @@ function TaskRow({ selected, task, onSelect }: { selected: boolean; task: Worksp
   );
 }
 
-export function Sidebar({ onNewTask, onNotify, onOpenWorkspace, onPanelChange, onResize, onSelectTask, onTransitionAgent, panel, snapshot, width }: SidebarProps) {
-  const activeCount = snapshot.agents.filter((agent) => ["running", "waiting", "starting"].includes(agent.status)).length;
+export function Sidebar({ onNewTask, onNotify, onOpenTerminal, onOpenWorkspace, onPanelChange, onResize, onSelectTask, panel, sessions, snapshot, task, width }: SidebarProps) {
+  const runtimes = task ? agentRuntimes(snapshot.agents, task, sessions) : [];
+  const runtimeProviders = new Set(runtimes.map(({ agent }) => agent.kind));
+  const unassignedSessions = sessions.filter((session) => !runtimeProviders.has(session.provider));
+  const activeCount = sessions.filter((session) => session.status === "running").length;
+  const failedCount = sessions.filter((session) => session.status === "failed").length;
   const hasWorkspace = Boolean(snapshot.repository);
   return (
     <aside id="sidebar" className="sidebar glass-panel">
@@ -57,19 +65,32 @@ export function Sidebar({ onNewTask, onNotify, onOpenWorkspace, onPanelChange, o
         </details>}
       </section>
       <section id="sidebar-agents" className={`sidebar-panel${panel === "agents" ? " active" : ""}`} aria-label="Agents">
-        <div className="panel-label"><span>Task agents</span><span>{activeCount} active</span></div>
+        <div className="panel-label"><span>Configured providers</span><span>{activeCount} live</span></div>
         <div className="agent-list" aria-live="polite">
-          {snapshot.agents.map((agent) => {
-            const nextLabel = agent.status === "running" ? "Pause" : agent.status === "waiting" ? "Resume" : "Start";
-            return <button key={agent.id} className={`agent-row status-${agent.status}`} type="button" aria-label={`${nextLabel} ${agent.name}, currently ${agent.status}`} onClick={() => onTransitionAgent(agent)}><i className={`agent-dot ${agent.kind === "codex" ? "cyan" : agent.kind === "claude_code" ? "amber" : "violet"}`}></i><span>{agent.name}</span><span className="agent-state"><small>{agent.status}</small><strong>{nextLabel}</strong></span></button>;
-          })}
+          {runtimes.map(({ agent, runningSessions, sessionCount, status }) => (
+            <button key={agent.id} className={`agent-row status-${status}`} type="button" aria-label={`Open terminal for ${agent.name}, ${status}`} onClick={onOpenTerminal}>
+              <i className={`agent-dot ${agent.kind === "codex" ? "cyan" : agent.kind === "claude_code" ? "amber" : "violet"}`}></i>
+              <span>{agent.name}</span>
+              <span className="agent-state">
+                <small>{status.replace("-", " ")}</small>
+                <strong>{runningSessions > 0 ? `${runningSessions} running` : sessionCount > 0 ? `${sessionCount} stopped` : "Open terminal"}</strong>
+              </span>
+            </button>
+          ))}
+          {unassignedSessions.map((session) => (
+            <button key={session.id} className={`agent-row status-${session.status}`} type="button" aria-label={`Open ${terminalProviderLabel(session.provider)} ${session.ordinal}, ${session.status}`} onClick={onOpenTerminal}>
+              <i className={`agent-dot ${session.provider === "codex" ? "cyan" : session.provider === "claude_code" ? "amber" : "violet"}`}></i>
+              <span>{terminalProviderLabel(session.provider)} {session.ordinal}</span>
+              <span className="agent-state"><small>{session.status}</small><strong>{session.pid ? `PID ${session.pid}` : "Open terminal"}</strong></span>
+            </button>
+          ))}
+          {hasWorkspace && task && runtimes.length === 0 && sessions.length === 0 && <p className="sidebar-empty-copy">No live sessions. Launch a provider or shell in Terminal mode.</p>}
           {!hasWorkspace && <p className="sidebar-empty-copy">Agents appear after a repository is open.</p>}
         </div>
         {hasWorkspace && <div className="local-card">
-          <div className="local-card-heading"><span className="health-dot"></span><strong>Local engine</strong><span>Healthy</span></div>
-          <p>Agent state, worktrees, and review gates stay on this machine.</p>
-          <div className="usage-row"><span>Context window used</span><strong>18%</strong></div>
-          <div className="usage-meter"><i></i></div>
+          <div className="local-card-heading"><span className="health-dot"></span><strong>Terminal runtime</strong><span>{failedCount > 0 ? "Needs attention" : "Local"}</span></div>
+          <p>Session status comes from the native PTY runtime. Terminal output and credentials are not persisted.</p>
+          <div className="usage-row"><span>Task sessions</span><strong>{sessions.length} total · {activeCount} running</strong></div>
         </div>}
       </section>
     </aside>

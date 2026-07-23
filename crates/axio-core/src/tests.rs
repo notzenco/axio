@@ -111,19 +111,61 @@ fn restoring_a_session_repairs_an_unknown_selected_task() {
         files_truncated: false,
         changes: Vec::new(),
     };
-    let snapshot = Workspace::demo().snapshot();
+    let snapshot = Workspace::for_repository(repository.clone()).snapshot();
     let mut session = axio_protocol::WorkspaceSession::from(&snapshot);
     session.selected_task = "missing".to_owned();
 
     let restored = Workspace::restore(session, repository).snapshot();
 
-    assert_eq!(restored.selected_task, "desktop");
+    assert_eq!(restored.selected_task, "workspace");
     assert_eq!(
         restored
             .repository
             .expect("live repository metadata should be attached")
             .root,
         "C:/work/axio"
+    );
+}
+
+#[test]
+fn restoring_removes_only_known_legacy_preview_records() {
+    let repository = RepositorySnapshot {
+        root: "C:/work/axio".to_owned(),
+        name: "axio".to_owned(),
+        branch: "main".to_owned(),
+        files: Vec::new(),
+        files_truncated: false,
+        changes: Vec::new(),
+    };
+    let mut workspace = Workspace::demo();
+    workspace
+        .create_task("Keep my real task".to_owned())
+        .expect("user task should be created");
+    workspace
+        .send_direction(
+            "task-3",
+            "Keep this direction".to_owned(),
+            "All agents".to_owned(),
+        )
+        .expect("user direction should be recorded");
+
+    let mut session = axio_protocol::WorkspaceSession::from(&workspace.snapshot());
+    session
+        .activity
+        .last_mut()
+        .expect("direction should be present")
+        .detail = Some("Direction sent to All agents".to_owned());
+    let restored = Workspace::restore(session, repository).snapshot();
+
+    assert!(restored.agents.is_empty());
+    assert_eq!(restored.tasks.len(), 1);
+    assert_eq!(restored.tasks[0].title, "Keep my real task");
+    assert_eq!(restored.selected_task, "task-3");
+    assert_eq!(restored.activity.len(), 2);
+    assert_eq!(restored.activity[0].summary, "Task created");
+    assert_eq!(
+        restored.activity[1].detail.as_deref(),
+        Some("Recorded in Task log")
     );
 }
 
@@ -148,6 +190,32 @@ fn direction_and_review_are_recorded_in_the_task_narrative() {
     assert_eq!(snapshot.activity.len(), 6);
     assert_eq!(
         snapshot.activity[4].detail.as_deref(),
-        Some("Direction sent to Codex")
+        Some("Recorded in Codex")
     );
+}
+
+#[test]
+fn new_repository_state_contains_no_manufactured_agent_progress() {
+    let workspace = Workspace::for_repository(RepositorySnapshot {
+        root: "C:/work/real-project".to_owned(),
+        name: "real-project".to_owned(),
+        branch: "main".to_owned(),
+        files: vec!["README.md".to_owned()],
+        files_truncated: false,
+        changes: vec![RepositoryChange {
+            path: "README.md".to_owned(),
+            status: "M".to_owned(),
+            additions: Some(2),
+            deletions: Some(0),
+        }],
+    });
+
+    let snapshot = workspace.snapshot();
+    assert!(snapshot.agents.is_empty());
+    assert_eq!(snapshot.tasks.len(), 1);
+    assert_eq!(snapshot.selected_task, "workspace");
+    assert_eq!(snapshot.tasks[0].changed_files, 1);
+    assert_eq!(snapshot.tasks[0].review, ReviewStatus::Pending);
+    assert_eq!(snapshot.activity.len(), 1);
+    assert_eq!(snapshot.activity[0].summary, "Repository opened");
 }

@@ -451,8 +451,7 @@ fn workspace_for_repository(
         return Workspace::restore(session.clone(), repository);
     }
     let path = repository.root.clone();
-    let mut workspace = Workspace::demo();
-    workspace.attach_repository(repository);
+    let mut workspace = Workspace::for_repository(repository);
     if let Some(task_id) = catalog.selected_task(&path) {
         let _ = workspace.select_task(task_id);
     }
@@ -481,8 +480,7 @@ mod tests {
         let repository = open_repository(env!("CARGO_MANIFEST_DIR"))
             .expect("test checkout should be Git-backed");
         let store = WorkspaceStore::new(&directory);
-        let mut workspace = Workspace::demo();
-        workspace.attach_repository(repository.clone());
+        let workspace = Workspace::for_repository(repository.clone());
         let mut catalog = WorkspaceCatalog::default();
         catalog.open(&repository);
         catalog.capture(&workspace.snapshot());
@@ -500,38 +498,31 @@ mod tests {
         runtime
             .mutate(|workspace| {
                 workspace.send_direction(
-                    "task-3",
+                    "task-2",
                     "Persist this direction".to_owned(),
                     "Codex".to_owned(),
                 )
             })
             .expect("direction should persist");
         runtime
-            .mutate(|workspace| workspace.review_task("task-3", true))
+            .mutate(|workspace| workspace.review_task("task-2", true))
             .expect("review should persist");
-        runtime
-            .mutate(|workspace| workspace.transition_agent("codex-01", AgentStatus::Waiting))
-            .expect("agent status should persist");
-        runtime
-            .mutate(|workspace| workspace.select_task("protocol"))
-            .expect("selection should persist");
         drop(runtime);
 
         let restored = initialize_runtime(directory.clone()).workspace.snapshot();
-        assert_eq!(restored.selected_task, "protocol");
-        assert_eq!(restored.tasks.len(), 3);
+        assert_eq!(restored.selected_task, "task-2");
+        assert_eq!(restored.tasks.len(), 2);
         assert_eq!(
             restored
                 .tasks
                 .iter()
-                .find(|task| task.id == "task-3")
+                .find(|task| task.id == "task-2")
                 .expect("created task should restore")
                 .review,
             axio_protocol::ReviewStatus::Approved
         );
-        assert_eq!(restored.agents[0].status, AgentStatus::Waiting);
         assert!(restored.activity.iter().any(|activity| {
-            activity.task_id == "task-3" && activity.summary == "Persist this direction"
+            activity.task_id == "task-2" && activity.summary == "Persist this direction"
         }));
 
         fs::remove_dir_all(directory).expect("test state should be removed");

@@ -9,9 +9,10 @@ import { Sidebar } from "./components/Sidebar";
 import { Statusbar } from "./components/Statusbar";
 import { TaskCanvas } from "./components/TaskCanvas";
 import { Titlebar } from "./components/Titlebar";
-import { copyFallbackSnapshot } from "./data/demo-state";
+import { createEmptySnapshot } from "./data/workspace-state";
 import { useLayout } from "./hooks/useLayout";
 import { useSettings } from "./hooks/useSettings";
+import { useTerminalSessions } from "./hooks/useTerminalSessions";
 import type { UpdateSettings } from "./components/SettingsDialog";
 import {
   createTask,
@@ -23,18 +24,18 @@ import {
   reviewTask,
   selectTask,
   sendDirection,
-  setAgentStatus,
   workspaceLifecycle,
 } from "./services/tauri";
-import type { AgentSession, AgentStatus, RecentWorkspace, WorkspaceSnapshot } from "./types";
+import type { RecentWorkspace, WorkMode, WorkspaceSnapshot } from "./types";
 
 export function App() {
-  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(copyFallbackSnapshot);
+  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(createEmptySnapshot);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [recentWorkspaces, setRecentWorkspaces] = useState<RecentWorkspace[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [workMode, setWorkMode] = useState<WorkMode>("canvas");
   const [toast, setToast] = useState("");
   const toastTimer = useRef<number | undefined>(undefined);
   const { reset: resetSettings, settings, update: updateSettings } = useSettings();
@@ -46,6 +47,7 @@ export function App() {
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(""), 2400);
   }, []);
+  const terminal = useTerminalSessions(selectedTask?.id ?? "", notify);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,8 +71,8 @@ export function App() {
       }
     }).catch((error) => {
       if (cancelled) return;
-      setSnapshot(copyFallbackSnapshot());
-      notify(`Using local preview data: ${error}`);
+      setSnapshot(createEmptySnapshot());
+      notify(`Workspace state is unavailable: ${error}`);
     });
     return () => {
       cancelled = true;
@@ -151,7 +153,7 @@ export function App() {
         tasks: [...current.tasks, { id, title, status: "active", worktree: `axio/task-${ordinal}`, agent_ids: current.agents.map((agent) => agent.id), unread: 0, changed_files: 0, review: "none" }],
       };
     });
-    notify("Task created with an isolated worktree");
+    notify("Local task created");
   };
 
   const addDirection = async (message: string, audience: string) => {
@@ -167,11 +169,11 @@ export function App() {
           agent_id: null,
           kind: "message",
           summary: message,
-          detail: `Direction sent to ${audience}`,
+          detail: `Recorded in ${audience}`,
           timestamp: "now",
         }],
       }));
-      notify(`Sent to ${audience} · ${selectedTask.title}`);
+      notify(`Recorded in ${selectedTask.title}`);
       requestAnimationFrame(() => requestAnimationFrame(() => {
         document.querySelector("[data-latest-activity='true'], #timeline > :last-child")?.scrollIntoView({
           behavior: settings.accessibility.reduceMotion ? "auto" : "smooth",
@@ -204,18 +206,6 @@ export function App() {
       if (nativeSnapshot) setSnapshot(nativeSnapshot);
       else setSnapshot((current) => ({ ...current, tasks: current.tasks.map((task) => task.id === selectedTask.id ? { ...task, review: approved ? "approved" : "rejected", status: approved ? "completed" : "waiting" } : task) }));
       notify(approved ? "Changes approved" : "Changes returned for revision");
-    } catch (error) {
-      notify(String(error));
-    }
-  };
-
-  const transitionAgent = async (agent: AgentSession) => {
-    const next: AgentStatus = agent.status === "running" ? "waiting" : agent.status === "waiting" ? "running" : "starting";
-    try {
-      const nativeSnapshot = await setAgentStatus(agent.id, next);
-      if (nativeSnapshot) setSnapshot(nativeSnapshot);
-      else setSnapshot((current) => ({ ...current, agents: current.agents.map((candidate) => candidate.id === agent.id ? { ...candidate, status: next } : candidate) }));
-      notify(`${agent.name} is now ${next}`);
     } catch (error) {
       notify(String(error));
     }
@@ -262,14 +252,14 @@ export function App() {
       <div className="app-shell">
         <Titlebar layout={layout} notify={notify} onOpenPalette={() => setPaletteOpen(true)} onOpenSettings={() => setSettingsOpen(true)} project={snapshot.project} />
         <div className={`workspace-shell${selectedTask ? "" : " workspace-empty-shell"}`}>
-          <Sidebar snapshot={snapshot} panel={layout.sidebarPanel} width={layout.workspaceWidth} onResize={layout.setWorkspaceWidth} onPanelChange={layout.showSidebarPanel} onNewTask={() => setNewTaskOpen(true)} onOpenWorkspace={() => setWorkspaceOpen(true)} onNotify={notify} onSelectTask={chooseTask} onTransitionAgent={transitionAgent} />
+          <Sidebar snapshot={snapshot} task={selectedTask} sessions={terminal.sessions} panel={layout.sidebarPanel} width={layout.workspaceWidth} onResize={layout.setWorkspaceWidth} onPanelChange={layout.showSidebarPanel} onNewTask={() => setNewTaskOpen(true)} onOpenWorkspace={() => setWorkspaceOpen(true)} onOpenTerminal={() => setWorkMode("terminal")} onNotify={notify} onSelectTask={chooseTask} />
           <button id="overlay-scrim" className="overlay-scrim" type="button" aria-label="Close open panel" tabIndex={-1} onClick={layout.closeOverlay}></button>
           {selectedTask
-            ? <TaskCanvas contextOpen={layout.inspectorOpen} contextPanel={layout.inspectorPanel} notify={notify} preferences={settings.composer} showReviewBadge={settings.workspace.showReviewBadge} snapshot={snapshot} task={selectedTask} onToolSelect={chooseContextTool} onOpenOutput={() => layout.showInspectorPanel("terminal")} onOpenReview={() => layout.showInspectorPanel("diff")} onSend={addDirection} />
+            ? <TaskCanvas contextOpen={layout.inspectorOpen} contextPanel={layout.inspectorPanel} mode={workMode} onModeChange={setWorkMode} notify={notify} preferences={settings.composer} showReviewBadge={settings.workspace.showReviewBadge} snapshot={snapshot} task={selectedTask} terminal={terminal} onToolSelect={chooseContextTool} onOpenTerminal={() => setWorkMode("terminal")} onOpenReview={() => layout.showInspectorPanel("diff")} onSend={addDirection} />
             : <EmptyWorkspace onOpenWorkspace={() => setWorkspaceOpen(true)} />}
-          {selectedTask && <ContextDock snapshot={snapshot} task={selectedTask} panel={layout.inspectorPanel} width={layout.contextWidth} onResize={layout.setContextWidth} onToggleWidth={layout.toggleContextWidth} onClose={() => layout.setInspectorOpen(false)} onDecideReview={decideReview} onRefreshRepository={refreshActiveRepository} />}
+          {selectedTask && <ContextDock snapshot={snapshot} task={selectedTask} sessions={terminal.sessions} panel={layout.inspectorPanel} width={layout.contextWidth} onResize={layout.setContextWidth} onToggleWidth={layout.toggleContextWidth} onClose={() => layout.setInspectorOpen(false)} onDecideReview={decideReview} onOpenTerminal={() => setWorkMode("terminal")} onRefreshRepository={refreshActiveRepository} />}
         </div>
-        <Statusbar snapshot={snapshot} task={selectedTask} onWorkspace={() => layout.showSidebarPanel("tasks")} onAgents={() => layout.showSidebarPanel("agents")} onOutput={() => layout.showInspectorPanel("terminal")} onReview={() => layout.showInspectorPanel("diff")} />
+        <Statusbar snapshot={snapshot} task={selectedTask} sessions={terminal.sessions} onWorkspace={() => layout.showSidebarPanel("tasks")} onAgents={() => layout.showSidebarPanel("agents")} onOutput={() => layout.showInspectorPanel("output")} onReview={() => layout.showInspectorPanel("diff")} />
       </div>
       <NewTaskDialog open={newTaskOpen} onClose={() => setNewTaskOpen(false)} onCreate={addTask} />
       <OpenWorkspaceDialog activePath={snapshot.repository?.root} open={workspaceOpen} recentWorkspaces={recentWorkspaces} onBrowse={browseRepositoryWorkspace} onClose={() => setWorkspaceOpen(false)} onOpen={openRepositoryWorkspace} onRemove={forgetRecentWorkspace} onCloseWorkspace={closeRepositoryWorkspace} />

@@ -47,6 +47,8 @@
 .agent-dot { width: 7px; height: 7px; border-radius: 50%; background: #697282; }
 .status-running .agent-dot { background: var(--cyan); box-shadow: 0 0 9px rgba(103,217,231,.46); animation: breathe 2.6s ease-in-out infinite; }
 .status-waiting .agent-dot { background: var(--amber); }
+.status-stopping .agent-dot { background: var(--amber); }
+.status-failed .agent-dot { background: var(--red); }
 .agent-state { display: grid; justify-items: end; gap: 2px; }
 .agent-state small { color: var(--faint); font-size: 9px; text-transform: capitalize; }
 .agent-state strong { color: #c5cbd4; font-size: 9px; font-weight: 620; }

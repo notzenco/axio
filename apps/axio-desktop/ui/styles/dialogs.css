@@ -129,6 +129,8 @@
 .settings-modal .settings-footer { justify-content: space-between; padding: 13px 20px; }
 
 .field-error { margin: 6px 0 0; color: #ff9b9b; font-size: 9px; }
+.task-boundary-note { display: grid; gap: 4px; margin: 14px 0 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.025); color: var(--faint); font-size: 9px; line-height: 1.5; }
+.task-boundary-note strong { color: #bbc2cc; font-size: 9px; }
 .modal textarea[aria-invalid="true"] { border-color: rgba(233, 120, 120, .8); box-shadow: 0 0 0 2px rgba(233, 120, 120, .12); }
 .confirmation-modal { width: min(420px, calc(100vw - 30px)); }
 .confirmation-modal .warning-symbol { border-color: rgba(239, 162, 82, .28); background: rgba(239, 162, 82, .11); color: #ffc27a; }

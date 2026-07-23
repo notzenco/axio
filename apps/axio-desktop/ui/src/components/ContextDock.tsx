@@ -1,5 +1,5 @@
 import { panelSizeLimits } from "../hooks/usePanelSizes";
-import type { ContextPanel, WorkspaceSnapshot, WorkspaceTask } from "../types";
+import type { ContextPanel, TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../types";
 import { ArrowMaximize20Regular, Dismiss20Regular } from "@fluentui/react-icons";
 import { PanelResizeHandle } from "./PanelResizeHandle";
 import { BrowserTool } from "./context/BrowserTool";
@@ -14,14 +14,16 @@ interface ContextDockProps {
   onDecideReview: (approved: boolean) => void;
   onResize: (width: number) => void;
   onRefreshRepository: () => void;
+  onOpenTerminal: () => void;
   onToggleWidth: () => void;
   panel: ContextPanel;
   snapshot: WorkspaceSnapshot;
+  sessions: TerminalSessionSnapshot[];
   task: WorkspaceTask;
   width: number;
 }
 
-export function ContextDock({ onClose, onDecideReview, onRefreshRepository, onResize, onToggleWidth, panel, snapshot, task, width }: ContextDockProps) {
+export function ContextDock({ onClose, onDecideReview, onOpenTerminal, onRefreshRepository, onResize, onToggleWidth, panel, sessions, snapshot, task, width }: ContextDockProps) {
   const activeTool = contextTools.find((tool) => tool.id === panel) ?? contextTools[0];
   const ActiveIcon = activeTool.icon;
   return (
@@ -37,9 +39,9 @@ export function ContextDock({ onClose, onDecideReview, onRefreshRepository, onRe
         </header>
         <BrowserTool active={panel === "browser"} />
         <FileExplorerTool active={panel === "files"} repository={snapshot.repository} onRefresh={onRefreshRepository} />
-        <ReviewTool active={panel === "diff"} repository={snapshot.repository} task={task} onDecideReview={onDecideReview} onRefresh={onRefreshRepository} />
-        <OutputTool active={panel === "terminal"} />
-        <PlanTool active={panel === "plan"} task={task} />
+        <ReviewTool active={panel === "diff"} snapshot={snapshot} task={task} onDecideReview={onDecideReview} onRefresh={onRefreshRepository} />
+        <OutputTool active={panel === "output"} sessions={sessions} onOpenTerminal={onOpenTerminal} />
+        <PlanTool active={panel === "plan"} sessions={sessions} snapshot={snapshot} task={task} />
       </div>
     </aside>
   );

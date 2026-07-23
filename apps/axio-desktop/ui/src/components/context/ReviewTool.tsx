@@ -7,29 +7,34 @@ import {
   Play16Regular,
 } from "@fluentui/react-icons";
 import { useState } from "react";
-import { diffFiles, type DiffFileKey } from "../../data/diff-files";
-import type { RepositorySnapshot, WorkspaceTask } from "../../types";
+import { taskActivities } from "../../data/task-runtime";
+import type { WorkspaceSnapshot, WorkspaceTask } from "../../types";
 
 const checks = ["Tests", "Lint", "Typecheck", "Build", "E2E smoke"];
 
-export function ReviewTool({ active, onDecideReview, onRefresh, repository, task }: { active: boolean; onDecideReview: (approved: boolean) => void; onRefresh: () => void; repository?: RepositorySnapshot | null; task: WorkspaceTask }) {
+export function ReviewTool({ active, onDecideReview, onRefresh, snapshot, task }: { active: boolean; onDecideReview: (approved: boolean) => void; onRefresh: () => void; snapshot: WorkspaceSnapshot; task: WorkspaceTask }) {
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const repository = snapshot.repository;
   const liveChanges = repository?.changes ?? [];
+  const relatedActivity = taskActivities(snapshot, task.id).slice(-2);
+  const hasChanges = Boolean(repository && liveChanges.length > 0);
+  const canResolve = task.review === "pending" && hasChanges;
+  const reviewLabel = task.review === "none" ? "No review requested" : task.review;
   return (
     <section className={`inspector-panel review-panel${active ? " active" : ""}`} id="panel-diff" role="tabpanel">
       <div className="review-scroll">
-        <div className="review-status-row"><span><i></i> In review</span><span>Since 10:34</span><b>Needs review</b></div>
+        <div className="review-status-row"><span><i></i>{reviewLabel}</span><b>{repository ? `${liveChanges.length} changed` : "Repository unavailable"}</b></div>
         <section className="review-section">
           <h3>Summary</h3>
-          <p>{repository ? `${liveChanges.length} changed ${liveChanges.length === 1 ? "path" : "paths"} in ${repository.name} on ${repository.branch}.` : "Preview data. Launch the native desktop build to inspect real Git changes."}</p>
+          <p>{repository ? `${liveChanges.length} changed ${liveChanges.length === 1 ? "path" : "paths"} in ${repository.name} on ${repository.branch}.` : "Launch the native desktop build and open a repository to inspect real Git changes."}</p>
         </section>
         <section className="review-section">
           <h3>Related activity</h3>
-          <div className="related-activity"><span className="agent-monogram cyan">C</span><span>Codex mapped the desktop boundary</span><time>10:24</time><CheckmarkCircle16Regular /></div>
-          <div className="related-activity"><span className="agent-monogram amber">C</span><span>Claude Code implemented workspace</span><time>10:29</time><CheckmarkCircle16Regular /></div>
+          {relatedActivity.map((activity) => <div className="related-activity" key={activity.id}><span className="agent-monogram cyan">{activity.kind.slice(0, 1).toUpperCase()}</span><span>{activity.summary}</span><time>{activity.timestamp}</time><CheckmarkCircle16Regular /></div>)}
+          {relatedActivity.length === 0 && <p className="empty-tool-state">No activity has been recorded for this task.</p>}
         </section>
         <section className="review-section">
-          <h3>Changed files ({repository ? liveChanges.length : task.changed_files}) <ChevronDown16Regular /></h3>
+          <h3>Changed files ({repository ? liveChanges.length : "unavailable"}) <ChevronDown16Regular /></h3>
           <div className="review-file-list">
             {repository ? liveChanges.map((file) => (
               <button key={file.path} className={activeFile === file.path ? "active" : ""} type="button" onClick={() => setActiveFile(activeFile === file.path ? null : file.path)}>
@@ -42,15 +47,7 @@ export function ReviewTool({ active, onDecideReview, onRefresh, repository, task
                 </small>
                 {activeFile === file.path && <code>{file.status === "??" ? "Untracked file" : `Git status: ${file.status}`}</code>}
               </button>
-            )) : (Object.keys(diffFiles) as DiffFileKey[]).map((key) => {
-              const file = diffFiles[key];
-              return (
-                <button key={key} className={activeFile === key ? "active" : ""} type="button" onClick={() => setActiveFile(activeFile === key ? null : key)}>
-                  <Document20Regular /><span>{file.path}</span><small><b>{file.added}</b> <em>{file.removed}</em></small>
-                  {activeFile === key && <code>{file.lines.slice(0, 3).map(([, number, value]) => `${number} ${value}`).join("\n")}</code>}
-                </button>
-              );
-            })}
+            )) : <p className="empty-tool-state">Repository changes are unavailable outside the native workspace.</p>}
             {repository && liveChanges.length === 0 && <p className="empty-tool-state">Working tree is clean.</p>}
           </div>
         </section>
@@ -63,14 +60,14 @@ export function ReviewTool({ active, onDecideReview, onRefresh, repository, task
         </section>
         <section className="review-section review-notes">
           <h3>Notes</h3>
-          <p>No notes added yet. Add notes to capture context for this review.</p>
-          <button type="button"><NoteAdd20Regular /> Add note</button>
+          <p>Review notes are not connected yet.</p>
+          <button type="button" disabled><NoteAdd20Regular /> Notes unavailable</button>
         </section>
       </div>
       <footer className="review-actions">
         <button className="secondary-button refresh-review-button" type="button" onClick={onRefresh} aria-label="Refresh Git status"><ArrowClockwise20Regular /></button>
         <button className="secondary-button" type="button" disabled={task.review !== "pending"} onClick={() => onDecideReview(false)}>Return</button>
-        <button className="resolve-review-button" type="button" disabled={task.review !== "pending"} onClick={() => onDecideReview(true)}><CheckmarkCircle16Regular /> Resolve review gate</button>
+        <button className="resolve-review-button" type="button" disabled={!canResolve} title={!hasChanges ? "A review can only be resolved when the repository has changes" : undefined} onClick={() => onDecideReview(true)}><CheckmarkCircle16Regular /> Resolve review gate</button>
       </footer>
     </section>
   );
