@@ -17,9 +17,13 @@ import type { TerminalProvider, TerminalSessionSnapshot } from "../types";
 export function useTerminalSessions(taskId: string, onError: (message: string) => void) {
   const [sessions, setSessions] = useState<TerminalSessionSnapshot[]>([]);
   const [busy, setBusy] = useState(false);
-  const [activeCount, setActiveCount] = useState(0);
+  const [activeCount, setActiveCount] = useState<number | null>(isNative ? null : 0);
+  const [capacityStatus, setCapacityStatus] = useState<"loading" | "ready" | "error">(
+    isNative ? "loading" : "ready",
+  );
   const refreshVersion = useRef(0);
   const capacityVersion = useRef(0);
+  const spawnPending = useRef(false);
   const activeTaskId = useRef(taskId);
   activeTaskId.current = taskId;
 
@@ -42,22 +46,32 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
   const refreshCapacity = useCallback(async () => {
     const version = ++capacityVersion.current;
     if (!isNative) {
-      if (version === capacityVersion.current) setActiveCount(0);
+      if (version === capacityVersion.current) {
+        setActiveCount(0);
+        setCapacityStatus("ready");
+      }
       return;
     }
+    setCapacityStatus((current) => current === "error" ? "loading" : current);
     try {
       const count = await terminalCapacity() ?? 0;
-      if (version === capacityVersion.current) setActiveCount(count);
+      if (version === capacityVersion.current) {
+        setActiveCount(count);
+        setCapacityStatus("ready");
+      }
     } catch (error) {
-      if (version === capacityVersion.current) onError(String(error));
+      if (version === capacityVersion.current) {
+        setCapacityStatus("error");
+        onError(String(error));
+      }
     }
   }, [onError]);
 
   useEffect(() => {
     setSessions([]);
-    setBusy(false);
     let disposed = false;
     let unlisten = () => {};
+    void refreshCapacity();
     void listenTerminalExit((event) => {
       if (disposed) return;
       setSessions((current) => applyTerminalExit(current, event));
@@ -70,7 +84,6 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
         }
         unlisten = dispose;
         void refresh();
-        void refreshCapacity();
       },
       (error) => {
         if (!disposed) {
@@ -88,6 +101,8 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
   }, [onError, refresh, refreshCapacity]);
 
   const spawn = async (provider: TerminalProvider, count: number) => {
+    if (spawnPending.current) return false;
+    spawnPending.current = true;
     const spawnTaskId = taskId;
     setBusy(true);
     try {
@@ -100,7 +115,8 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
       return false;
     } finally {
       void refreshCapacity();
-      if (activeTaskId.current === spawnTaskId) setBusy(false);
+      spawnPending.current = false;
+      setBusy(false);
     }
   };
 
@@ -124,7 +140,17 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
     }
   };
 
-  return { activeCount, busy, close, refresh, sessions, spawn, stop };
+  return {
+    activeCount,
+    busy,
+    capacityStatus,
+    close,
+    refresh,
+    refreshCapacity,
+    sessions,
+    spawn,
+    stop,
+  };
 }
 
 export type TerminalSessionController = ReturnType<typeof useTerminalSessions>;

@@ -20,7 +20,8 @@ describe("terminal provider controls", () => {
   });
 
   test("derives launch limits from app-wide active capacity", () => {
-    expect(terminalLaunchLimit(Number.NaN)).toBe(8);
+    expect(terminalLaunchLimit(null)).toBe(0);
+    expect(terminalLaunchLimit(Number.NaN)).toBe(0);
     expect(terminalLaunchLimit(-1)).toBe(8);
     expect(terminalLaunchLimit(0)).toBe(8);
     expect(terminalLaunchLimit(7)).toBe(5);

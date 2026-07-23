@@ -19,9 +19,8 @@ export function normalizeTerminalCount(value: number, maximum = MAX_TERMINAL_SPA
   return Math.min(Math.max(1, maximum), Math.max(1, Math.trunc(value)));
 }
 
-export function terminalLaunchLimit(activeCount: number) {
-  const normalizedActive = Number.isFinite(activeCount)
-    ? Math.min(MAX_TERMINAL_SESSIONS, Math.max(0, Math.trunc(activeCount)))
-    : 0;
+export function terminalLaunchLimit(activeCount: number | null) {
+  if (activeCount === null || !Number.isFinite(activeCount)) return 0;
+  const normalizedActive = Math.min(MAX_TERMINAL_SESSIONS, Math.max(0, Math.trunc(activeCount)));
   return Math.min(MAX_TERMINAL_SPAWN_COUNT, MAX_TERMINAL_SESSIONS - normalizedActive);
 }
