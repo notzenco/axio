@@ -47,6 +47,10 @@ impl Workspace {
     pub fn close_repository(&mut self) {
         self.snapshot.project = "No workspace".to_owned();
         self.snapshot.branch = "—".to_owned();
+        self.snapshot.agents.clear();
+        self.snapshot.tasks.clear();
+        self.snapshot.selected_task.clear();
+        self.snapshot.activity.clear();
         self.snapshot.repository = None;
     }
 

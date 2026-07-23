@@ -25,9 +25,9 @@ the same Rust core. The paused legacy switcher is not a second current app.
 | Area | Current behavior | Evidence |
 |---|---|---|
 | Protocol | Serializable agent, task, activity, review, and workspace snapshot types. | `crates/axio-protocol`; Rust compilation and tests. |
-| Core state | Validated agent transitions, task selection/creation, direction events, and review decisions. | `crates/axio-core`; five unit tests. |
+| Core state | Validated agent transitions, task selection/creation, direction events, review decisions, and a closed-workspace invariant. | `crates/axio-core`; seven focused unit tests. |
 | Repository inspection | Discovers the Git checkout containing the process directory or executable, then reads its root, branch, tracked/untracked file inventory, working-tree statuses, and text line statistics without invoking a shell. | `crates/axio-core/src/repository.rs`; parser tests and live CLI verification. |
-| Workspace lifecycle | Opens a Git repository from an explicit local path, keeps bounded recents, remembers the selected demo task per repository, restores after restart, and closes or forgets repositories without changing source files. A versioned two-slot local store retains the last valid generation after an interrupted or corrupt write. | `crates/axio-core/src/persistence.rs`; Rust recovery/path/removal tests and native Windows restart verification. |
+| Workspace lifecycle | Opens a Git repository with the native OS folder chooser or an explicit local path, keeps bounded recents, remembers the selected demo task per repository, restores after restart, and closes into a useful empty state without changing source files. A versioned two-slot local store retains the last valid generation after an interrupted or corrupt write. | `crates/axio-core/src/persistence.rs`; Rust recovery/path/removal/closed-state tests and native Windows restart verification. |
 | CLI | `status`, `status --json`, and `version` over the shared snapshot, enriched with live repository data when discovery succeeds. | CLI smoke test in CI and local repository verification. |
 | Native shell | Tauri window, drag/minimize/maximize/close, narrow command bridge, and restrictive CSP. | Native release build and manual Windows run. |
 | Task workspace | Task/worktree selection, chronological activity, explicit attention state, inline task validation, agent controls, directions, and review decisions. | Browser and native interaction verification. |
@@ -64,8 +64,6 @@ process life.
 
 ## Not implemented
 
-- Native OS folder chooser; the current dialog accepts and validates an
-  explicit repository path.
 - Complete task/event persistence, forward migrations beyond the initial
   schema, and full session/crash restoration.
 - Agent connector descriptors, authentication handoff, or process supervision.
@@ -96,9 +94,8 @@ process life.
 The next work is outcome-driven rather than tied to invented version numbers or
 dates. The dependency order is:
 
-1. Complete the durable workspace outcome with a native folder chooser,
-   complete task-state restoration, and migration coverage for each future
-   persisted schema version.
+1. Complete the durable workspace outcome with complete task-state restoration
+   and migration coverage for each future persisted schema version.
 2. Define and prove one real external-agent connector lifecycle.
 3. Turn process, terminal, tool, and approval events into the task narrative.
 4. Connect task boundaries to real Git worktrees and review operations.

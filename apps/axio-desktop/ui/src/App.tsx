@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CommandPalette } from "./components/CommandPalette";
 import { ContextDock } from "./components/ContextDock";
+import { EmptyWorkspace } from "./components/EmptyWorkspace";
 import { NewTaskDialog } from "./components/NewTaskDialog";
 import { OpenWorkspaceDialog } from "./components/OpenWorkspaceDialog";
 import { SettingsDialog } from "./components/SettingsDialog";
@@ -16,6 +17,7 @@ import {
   createTask,
   closeWorkspace,
   openWorkspace,
+  pickWorkspaceFolder,
   refreshRepository,
   removeRecentWorkspace,
   reviewTask,
@@ -68,6 +70,15 @@ export function App() {
     const lifecycle = await openWorkspace(path);
     applyWorkspaceLifecycle(lifecycle);
     if (lifecycle) notify(`Opened ${lifecycle.workspace.project}`);
+  };
+
+  const browseRepositoryWorkspace = async () => {
+    const selectedPath = await pickWorkspaceFolder();
+    if (selectedPath === undefined) {
+      notify("The native folder chooser is available in the desktop build");
+      return null;
+    }
+    return selectedPath;
   };
 
   const closeRepositoryWorkspace = async () => {
@@ -190,7 +201,7 @@ export function App() {
   };
 
   const runPaletteCommand = (command: string) => {
-    if (command === "new") setNewTaskOpen(true);
+    if (command === "new") selectedTask ? setNewTaskOpen(true) : setWorkspaceOpen(true);
     else if (command === "focus") layout.setFocusMode(!layout.focusMode);
     else if (command === "review") layout.showInspectorPanel("diff");
     else if (command === "settings") setSettingsOpen(true);
@@ -225,21 +236,22 @@ export function App() {
     layout.showInspectorPanel(panel);
   };
 
-  if (!selectedTask) return null;
   return (
     <>
       <div className="app-shell">
         <Titlebar layout={layout} notify={notify} onOpenPalette={() => setPaletteOpen(true)} onOpenSettings={() => setSettingsOpen(true)} project={snapshot.project} />
-        <div className="workspace-shell">
+        <div className={`workspace-shell${selectedTask ? "" : " workspace-empty-shell"}`}>
           <Sidebar snapshot={snapshot} panel={layout.sidebarPanel} width={layout.workspaceWidth} onResize={layout.setWorkspaceWidth} onPanelChange={layout.showSidebarPanel} onNewTask={() => setNewTaskOpen(true)} onOpenWorkspace={() => setWorkspaceOpen(true)} onNotify={notify} onSelectTask={chooseTask} onTransitionAgent={transitionAgent} />
           <button id="overlay-scrim" className="overlay-scrim" type="button" aria-label="Close open panel" tabIndex={-1} onClick={layout.closeOverlay}></button>
-          <TaskCanvas contextOpen={layout.inspectorOpen} contextPanel={layout.inspectorPanel} preferences={settings.composer} showReviewBadge={settings.workspace.showReviewBadge} snapshot={snapshot} task={selectedTask} onToolSelect={chooseContextTool} onOpenOutput={() => layout.showInspectorPanel("terminal")} onOpenReview={() => layout.showInspectorPanel("diff")} onSend={addDirection} />
-          <ContextDock snapshot={snapshot} task={selectedTask} panel={layout.inspectorPanel} width={layout.contextWidth} onResize={layout.setContextWidth} onToggleWidth={layout.toggleContextWidth} onClose={() => layout.setInspectorOpen(false)} onDecideReview={decideReview} onRefreshRepository={refreshActiveRepository} />
+          {selectedTask
+            ? <TaskCanvas contextOpen={layout.inspectorOpen} contextPanel={layout.inspectorPanel} preferences={settings.composer} showReviewBadge={settings.workspace.showReviewBadge} snapshot={snapshot} task={selectedTask} onToolSelect={chooseContextTool} onOpenOutput={() => layout.showInspectorPanel("terminal")} onOpenReview={() => layout.showInspectorPanel("diff")} onSend={addDirection} />
+            : <EmptyWorkspace onOpenWorkspace={() => setWorkspaceOpen(true)} />}
+          {selectedTask && <ContextDock snapshot={snapshot} task={selectedTask} panel={layout.inspectorPanel} width={layout.contextWidth} onResize={layout.setContextWidth} onToggleWidth={layout.toggleContextWidth} onClose={() => layout.setInspectorOpen(false)} onDecideReview={decideReview} onRefreshRepository={refreshActiveRepository} />}
         </div>
         <Statusbar snapshot={snapshot} task={selectedTask} onWorkspace={() => layout.showSidebarPanel("tasks")} onAgents={() => layout.showSidebarPanel("agents")} onOutput={() => layout.showInspectorPanel("terminal")} onReview={() => layout.showInspectorPanel("diff")} />
       </div>
       <NewTaskDialog open={newTaskOpen} onClose={() => setNewTaskOpen(false)} onCreate={addTask} />
-      <OpenWorkspaceDialog activePath={snapshot.repository?.root} open={workspaceOpen} recentWorkspaces={recentWorkspaces} onClose={() => setWorkspaceOpen(false)} onOpen={openRepositoryWorkspace} onRemove={forgetRecentWorkspace} onCloseWorkspace={closeRepositoryWorkspace} />
+      <OpenWorkspaceDialog activePath={snapshot.repository?.root} open={workspaceOpen} recentWorkspaces={recentWorkspaces} onBrowse={browseRepositoryWorkspace} onClose={() => setWorkspaceOpen(false)} onOpen={openRepositoryWorkspace} onRemove={forgetRecentWorkspace} onCloseWorkspace={closeRepositoryWorkspace} />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} settings={settings} onUpdate={handleSettingsUpdate} onReset={handleSettingsReset} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onCommand={runPaletteCommand} tasks={snapshot.tasks} />
       <div id="toast" className={`toast glass-surface${toast ? " visible" : ""}`} role="status" aria-live="polite">{toast}</div>

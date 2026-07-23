@@ -7,6 +7,7 @@ use axio_protocol::{
     AgentStatus, RepositoryFileContent, WorkspaceLifecycleSnapshot, WorkspaceSnapshot,
 };
 use tauri::{Manager, State};
+use tauri_plugin_dialog::DialogExt;
 
 struct AppState {
     runtime: Mutex<WorkspaceRuntime>,
@@ -38,6 +39,20 @@ fn workspace_lifecycle(state: State<'_, AppState>) -> Result<WorkspaceLifecycleS
 }
 
 #[tauri::command]
+async fn pick_workspace_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    app.dialog()
+        .file()
+        .set_title("Open Axio workspace")
+        .blocking_pick_folder()
+        .map(|path| {
+            path.as_path()
+                .map(|path| path.to_string_lossy().into_owned())
+                .ok_or_else(|| "selected folder is not a local filesystem path".to_owned())
+        })
+        .transpose()
+}
+
+#[tauri::command]
 fn open_workspace(
     path: String,
     state: State<'_, AppState>,
@@ -47,6 +62,9 @@ fn open_workspace(
     let mut catalog = runtime.catalog.clone();
     catalog.open(&repository);
     runtime.commit_catalog(catalog)?;
+    if runtime.workspace.snapshot().tasks.is_empty() {
+        runtime.workspace = Workspace::demo();
+    }
     runtime.workspace.attach_repository(repository.clone());
     runtime.restore_selected_task(&repository.root);
     Ok(runtime.lifecycle_snapshot())
@@ -190,6 +208,7 @@ fn window_action(action: String, window: tauri::WebviewWindow) -> Result<(), Str
 /// Starts the native desktop application.
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let state_directory = app
                 .path()
@@ -204,6 +223,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             workspace_snapshot,
             workspace_lifecycle,
+            pick_workspace_folder,
             open_workspace,
             close_workspace,
             remove_recent_workspace,
@@ -262,10 +282,11 @@ fn initialize_runtime(state_directory: PathBuf) -> WorkspaceRuntime {
         Ok(catalog) => (catalog, None),
         Err(error) => (WorkspaceCatalog::default(), Some(error.to_string())),
     };
-    let mut workspace = Workspace::demo();
+    let mut workspace = Workspace::empty();
     if let Some(path) = catalog.active_workspace.clone() {
         match open_repository(&path) {
             Ok(repository) => {
+                workspace = Workspace::demo();
                 workspace.attach_repository(repository);
                 if let Some(task_id) = catalog.selected_task(&path) {
                     let _ = workspace.select_task(task_id);
@@ -276,14 +297,11 @@ fn initialize_runtime(state_directory: PathBuf) -> WorkspaceRuntime {
                     "The previous workspace could not be restored: {error}"
                 ));
                 catalog.close();
-                workspace.close_repository();
                 if let Err(error) = store.save(&catalog) {
                     warning = Some(error.to_string());
                 }
             }
         }
-    } else {
-        workspace.close_repository();
     }
     WorkspaceRuntime {
         workspace,

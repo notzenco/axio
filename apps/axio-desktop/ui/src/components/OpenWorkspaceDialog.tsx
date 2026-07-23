@@ -5,6 +5,7 @@ import { useLightDismiss } from "../hooks/useLightDismiss";
 
 interface OpenWorkspaceDialogProps {
   activePath?: string;
+  onBrowse: () => Promise<string | null>;
   onClose: () => void;
   onCloseWorkspace: () => Promise<void>;
   onOpen: (path: string) => Promise<void>;
@@ -15,6 +16,7 @@ interface OpenWorkspaceDialogProps {
 
 export function OpenWorkspaceDialog({
   activePath,
+  onBrowse,
   onClose,
   onCloseWorkspace,
   onOpen,
@@ -64,6 +66,20 @@ export function OpenWorkspaceDialog({
     await openPath(selectedPath);
   };
 
+  const browse = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const selectedPath = await onBrowse();
+      if (selectedPath) await openPath(selectedPath);
+    } catch (browseError) {
+      setError(String(browseError));
+      inputRef.current?.focus();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <dialog className="modal workspace-modal" aria-labelledby="workspace-dialog-title" ref={dialogRef}>
       <form noValidate onSubmit={submit}>
@@ -76,7 +92,7 @@ export function OpenWorkspaceDialog({
           <input ref={inputRef} value={path} onChange={(event) => { setPath(event.target.value); setError(""); }} placeholder="C:\Projects\my-repository" aria-invalid={Boolean(error)} />
         </label>
         <p className="field-error" role="alert" hidden={!error}>{error}</p>
-        <footer><button className="secondary-button" type="button" onClick={onClose}>Cancel</button><button className="primary-button" type="submit" disabled={submitting}>Open folder</button></footer>
+        <footer><button className="secondary-button" type="button" onClick={onClose}>Cancel</button><button className="secondary-button" type="button" disabled={submitting} onClick={() => void browse()}>Browse…</button><button className="primary-button" type="submit" disabled={submitting}>Open path</button></footer>
         <section className="recent-workspaces" aria-labelledby="recent-workspaces-label">
           <div className="panel-label"><span id="recent-workspaces-label">Recent workspaces</span><span>{recentWorkspaces.length}</span></div>
           {recentWorkspaces.length === 0

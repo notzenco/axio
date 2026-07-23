@@ -7,6 +7,8 @@
   body.sidebar-hidden .workspace-shell { grid-template-columns: 0 minmax(400px,1fr) min(var(--context-width),540px); }
   body.inspector-hidden .workspace-shell { grid-template-columns: min(var(--sidebar-width),214px) minmax(400px,1fr) 0; }
   body.sidebar-hidden.inspector-hidden .workspace-shell { grid-template-columns: 0 minmax(400px,1fr) 0; }
+  body .workspace-shell.workspace-empty-shell { grid-template-columns: min(var(--sidebar-width),214px) minmax(320px,1fr); }
+  body.sidebar-hidden .workspace-shell.workspace-empty-shell { grid-template-columns: 0 minmax(320px,1fr); }
 }
 
 @media (max-width: 960px) {

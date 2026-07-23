@@ -1,4 +1,10 @@
 .task-canvas { position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; border-radius: 15px; background: rgba(3,5,9,.22); scrollbar-width: thin; isolation: isolate; container-type: inline-size; }
+.empty-workspace { place-items: center; justify-content: center; padding: 28px; }
+.empty-workspace-card { display: grid; justify-items: center; width: min(460px, 100%); padding: 42px 34px; border-radius: 18px; text-align: center; }
+.empty-workspace-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 16px; border: 1px solid rgba(154,124,255,.32); border-radius: 15px; background: rgba(154,124,255,.11); color: #c9beff; }
+.empty-workspace-icon svg { width: 24px; height: 24px; }
+.empty-workspace h1 { margin-top: 8px; font-size: clamp(21px, 2.1vw, 28px); white-space: normal; }
+.empty-workspace p { max-width: 340px; margin: 12px 0 20px; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .aurora { position: fixed; z-index: -1; border-radius: 50%; filter: blur(70px); opacity: .16; pointer-events: none; animation: drift 14s ease-in-out infinite alternate; }
 .aurora-one { top: 4%; left: 38%; width: 330px; height: 270px; background: #6448d8; }
 .aurora-two { right: 12%; bottom: 8%; width: 280px; height: 240px; background: #176f82; animation-delay: -6s; }

@@ -6,6 +6,20 @@ use axio_protocol::{
 use crate::Workspace;
 
 impl Workspace {
+    /// Provides a closed state with no repository-scoped demo data.
+    #[must_use]
+    pub fn empty() -> Self {
+        Self::new(WorkspaceSnapshot {
+            project: "No workspace".to_owned(),
+            branch: "—".to_owned(),
+            agents: Vec::new(),
+            tasks: Vec::new(),
+            selected_task: String::new(),
+            activity: Vec::new(),
+            repository: None,
+        })
+    }
+
     /// Provides deterministic state for the first desktop and CLI shell.
     #[must_use]
     pub fn demo() -> Self {
