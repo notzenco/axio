@@ -36,14 +36,20 @@ function queueOrderedEvent(
 }
 
 export function TerminalPane({ busy, onClose, onError, onStop, session }: TerminalPaneProps) {
+  const running = session.status === "running";
   const containerRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<Terminal | null>(null);
+  const inputEnabledRef = useRef(running);
+  const clearInputRef = useRef(() => {});
+  inputEnabledRef.current = running;
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const terminal = new Terminal({
       allowProposedApi: false,
-      cursorBlink: session.status === "running",
+      cursorBlink: running,
+      disableStdin: !running,
       fontFamily: '"Cascadia Mono", "SFMono-Regular", Consolas, monospace',
       fontSize: 12,
       lineHeight: 1.25,
@@ -72,6 +78,7 @@ export function TerminalPane({ busy, onClose, onError, onStop, session }: Termin
       },
     });
     terminal.open(container);
+    terminalRef.current = terminal;
     const focusTerminal = () => terminal.focus();
     container.addEventListener("pointerdown", focusTerminal);
     const encoder = new TextEncoder();
@@ -91,18 +98,29 @@ export function TerminalPane({ busy, onClose, onError, onStop, session }: Termin
     const flushInput = () => {
       inputTimer = 0;
       if (disposed) return;
+      if (!inputEnabledRef.current) {
+        inputBuffer.clear();
+        return;
+      }
       for (const data of inputBuffer.drain()) {
         inputWrites = inputWrites
           .then(async () => {
+            if (!inputEnabledRef.current) return;
             await writeTerminalInput(session.id, data);
           })
           .catch((error) => {
-            if (!disposed) onError(String(error));
+            if (!disposed && inputEnabledRef.current) onError(String(error));
           });
       }
     };
+    clearInputRef.current = () => {
+      clearTimeout(inputTimer);
+      inputTimer = 0;
+      inputBuffer.clear();
+    };
 
     const inputDisposable = terminal.onData((data) => {
+      if (!inputEnabledRef.current) return;
       inputBuffer.append(encoder.encode(data));
       if (!inputTimer) inputTimer = window.setTimeout(flushInput, 8);
     });
@@ -164,10 +182,21 @@ export function TerminalPane({ busy, onClose, onError, onStop, session }: Termin
       container.removeEventListener("pointerdown", focusTerminal);
       inputDisposable.dispose();
       terminal.dispose();
+      if (terminalRef.current === terminal) terminalRef.current = null;
+      clearInputRef.current = () => {};
     };
   }, [onError, session.id]);
 
-  const running = session.status === "running";
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (terminal) {
+      terminal.options.cursorBlink = running;
+      terminal.options.disableStdin = !running;
+      if (!running) terminal.blur();
+    }
+    if (!running) clearInputRef.current();
+  }, [running]);
+
   return (
     <article className="terminal-pane">
       <header>

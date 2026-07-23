@@ -10,6 +10,11 @@ export class TerminalInputBuffer {
     this.length += data.length;
   }
 
+  clear() {
+    this.chunks.length = 0;
+    this.length = 0;
+  }
+
   drain(maxBatchBytes = MAX_TERMINAL_INPUT_BYTES) {
     if (!Number.isInteger(maxBatchBytes) || maxBatchBytes < 1) {
       throw new RangeError("terminal input batch size must be a positive integer");
@@ -38,8 +43,7 @@ export class TerminalInputBuffer {
       remaining -= batch.length;
     }
 
-    this.chunks.length = 0;
-    this.length = 0;
+    this.clear();
     return batches;
   }
 }

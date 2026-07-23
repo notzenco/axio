@@ -108,4 +108,39 @@ describe("terminal provider controls", () => {
     buffer.append(Uint8Array.of(1));
     expect(() => buffer.drain(0)).toThrow(RangeError);
   });
+
+  test("discards buffered input when a session becomes read-only", () => {
+    const buffer = new TerminalInputBuffer();
+    buffer.append(Uint8Array.of(1, 2, 3));
+    buffer.append(Uint8Array.of(4, 5));
+    buffer.clear();
+
+    expect(buffer.drain()).toEqual([]);
+    buffer.append(Uint8Array.of(6));
+    expect(buffer.drain()).toEqual([Uint8Array.of(6)]);
+  });
+
+  test("keeps buffered input empty across sustained read-only transitions", () => {
+    const buffers = Array.from({ length: 12 }, () => new TerminalInputBuffer());
+    let discardedTransitions = 0;
+    let invalidDrains = 0;
+
+    for (let event = 0; event < 2_400_000; event += 1) {
+      const session = event % buffers.length;
+      const buffer = buffers[session];
+      buffer.append(Uint8Array.of(event % 251));
+      if (event % 4 === 0) {
+        buffer.clear();
+        discardedTransitions += 1;
+      } else {
+        if (buffer.drain().length !== 1) invalidDrains += 1;
+      }
+    }
+
+    buffers.forEach((buffer) => {
+      if (buffer.drain().length !== 0) invalidDrains += 1;
+    });
+    expect(invalidDrains).toBe(0);
+    expect(discardedTransitions).toBe(600_000);
+  });
 });
