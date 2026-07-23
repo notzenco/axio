@@ -326,10 +326,7 @@ impl TerminalManager {
             .name(format!("axio-{session_id}-output"))
             .spawn(move || {
                 let mut buffer = [0_u8; 8192];
-                loop {
-                    let Ok(read) = reader.read(&mut buffer) else {
-                        break;
-                    };
+                while let Ok(read) = reader.read(&mut buffer) {
                     if read == 0 {
                         break;
                     }
