@@ -26,7 +26,7 @@ function writeOrderedEvent(
   const eventEnd = event.offset + event.data.length;
   if (eventEnd <= nextOffset.current) return;
   const start = Math.max(0, nextOffset.current - event.offset);
-  terminal.write(Uint8Array.from(event.data.slice(start)));
+  terminal.write(Uint8Array.from(start === 0 ? event.data : event.data.slice(start)));
   nextOffset.current = eventEnd;
 }
 

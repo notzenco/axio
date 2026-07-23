@@ -7,7 +7,6 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
     thread,
-    time::Duration,
 };
 
 use axio_protocol::{
@@ -23,7 +22,6 @@ const DEFAULT_ROWS: u16 = 24;
 const DEFAULT_COLUMNS: u16 = 80;
 const MAX_INPUT_BYTES: usize = 64 * 1024;
 const MAX_OUTPUT_BYTES: usize = 512 * 1024;
-const OUTPUT_EVENT_INTERVAL: Duration = Duration::from_millis(12);
 const MAX_TERMINAL_DIMENSION: u16 = 1000;
 const MAX_SESSIONS: usize = 12;
 const MAX_SPAWN_COUNT: u8 = 8;
@@ -358,7 +356,6 @@ impl TerminalManager {
                             data,
                         },
                     );
-                    thread::sleep(OUTPUT_EVENT_INTERVAL);
                 }
             })
         {
@@ -541,6 +538,32 @@ mod tests {
             (source.len() - MAX_OUTPUT_BYTES) as u64
         );
         assert_eq!(contents.end_offset, source.len() as u64);
+    }
+
+    #[test]
+    fn output_buffers_stay_independent_at_the_session_limit() {
+        let source_length = MAX_OUTPUT_BYTES * 3 + 257;
+        let mut buffers = (0..MAX_SESSIONS)
+            .map(|_| OutputBuffer::default())
+            .collect::<Vec<_>>();
+
+        for (session, buffer) in buffers.iter_mut().enumerate() {
+            for offset in (0..source_length).step_by(4096) {
+                let chunk_length = (source_length - offset).min(4096);
+                let chunk = vec![session as u8; chunk_length];
+                assert_eq!(buffer.append(&chunk), offset as u64);
+            }
+        }
+
+        for (session, buffer) in buffers.iter().enumerate() {
+            let contents = buffer.snapshot();
+            assert_eq!(contents.data, vec![session as u8; MAX_OUTPUT_BYTES]);
+            assert_eq!(
+                contents.start_offset,
+                (source_length - MAX_OUTPUT_BYTES) as u64
+            );
+            assert_eq!(contents.end_offset, source_length as u64);
+        }
     }
 
     #[test]
