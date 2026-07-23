@@ -21,8 +21,12 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 axio-core.workspace = true
 axio-protocol.workspace = true
+portable-pty = "0.9"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
+
+[target.'cfg(windows)'.dependencies]
+win32job = "2.0.3"
 
 [lints]
 workspace = true

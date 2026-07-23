@@ -61,6 +61,13 @@ metadata. Schema v1 catalogs migrate into schema v2; repositories without a
 complete saved session retain their legacy selected-task behavior and receive
 the deterministic initial state.
 
+Terminal mode uses transient protocol vocabulary rather than
+`WorkspaceSession`. `TerminalSessionSnapshot` identifies the provider, task,
+repository root, working directory, PID, lifecycle state, and exit code without
+including output or environment values. `TerminalOutputSnapshot` and
+`TerminalOutputEvent` carry bounded binary PTY data with byte offsets so a pane
+can combine replay and live events without gaps or duplication.
+
 ## Tauri command boundary
 
 The desktop exposes:
@@ -78,10 +85,19 @@ The desktop exposes:
 - `create_task`
 - `send_direction`
 - `review_task`
+- `terminal_sessions`
+- `spawn_terminal_instances`
+- `terminal_output`
+- `write_terminal_input`
+- `resize_terminal`
+- `stop_terminal`
+- `close_terminal`
 - `window_action`
 
 Workspace commands return a complete updated snapshot or a string error. The
-window command accepts only drag, minimize, maximize/unmaximize, and close.
+terminal boundary accepts only known providers, bounded counts, existing
+session IDs, byte input, and dimensions. The window command accepts only drag,
+minimize, maximize/unmaximize, and close.
 
 ## CLI contract
 

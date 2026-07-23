@@ -1,16 +1,21 @@
+mod terminal;
+
 use std::{path::PathBuf, sync::Mutex};
 
 use axio_core::{
     Workspace, WorkspaceCatalog, WorkspaceStore, open_repository, read_repository_file as read_file,
 };
 use axio_protocol::{
-    AgentStatus, RepositoryFileContent, WorkspaceLifecycleSnapshot, WorkspaceSnapshot,
+    AgentStatus, RepositoryFileContent, TerminalOutputSnapshot, TerminalProvider,
+    TerminalSessionSnapshot, WorkspaceLifecycleSnapshot, WorkspaceSnapshot,
 };
 use tauri::{Manager, State};
 use tauri_plugin_dialog::DialogExt;
+use terminal::TerminalManager;
 
 struct AppState {
     runtime: Mutex<WorkspaceRuntime>,
+    terminals: TerminalManager,
 }
 
 struct WorkspaceRuntime {
@@ -58,7 +63,13 @@ fn open_workspace(
     state: State<'_, AppState>,
 ) -> Result<WorkspaceLifecycleSnapshot, String> {
     let repository = open_repository(&path).map_err(|error| error.to_string())?;
+    let repository_root = repository.root.clone();
     let mut runtime = lock_runtime(&state)?;
+    let previous_root = runtime
+        .workspace
+        .snapshot()
+        .repository
+        .map(|repository| repository.root);
     let mut catalog = runtime.catalog.clone();
     catalog.capture(&runtime.workspace.snapshot());
     catalog.open(&repository);
@@ -66,18 +77,35 @@ fn open_workspace(
     catalog.capture(&workspace.snapshot());
     runtime.commit_catalog(catalog)?;
     runtime.workspace = workspace;
-    Ok(runtime.lifecycle_snapshot())
+    let snapshot = runtime.lifecycle_snapshot();
+    drop(runtime);
+    if let Some(previous_root) = previous_root
+        && previous_root != repository_root
+    {
+        state.terminals.stop_for_repository(&previous_root);
+    }
+    Ok(snapshot)
 }
 
 #[tauri::command]
 fn close_workspace(state: State<'_, AppState>) -> Result<WorkspaceLifecycleSnapshot, String> {
     let mut runtime = lock_runtime(&state)?;
+    let previous_root = runtime
+        .workspace
+        .snapshot()
+        .repository
+        .map(|repository| repository.root);
     let mut catalog = runtime.catalog.clone();
     catalog.capture(&runtime.workspace.snapshot());
     catalog.close();
     runtime.commit_catalog(catalog)?;
     runtime.workspace = Workspace::empty();
-    Ok(runtime.lifecycle_snapshot())
+    let snapshot = runtime.lifecycle_snapshot();
+    drop(runtime);
+    if let Some(previous_root) = previous_root {
+        state.terminals.stop_for_repository(&previous_root);
+    }
+    Ok(snapshot)
 }
 
 #[tauri::command]
@@ -94,7 +122,12 @@ fn remove_recent_workspace(
     if was_active {
         runtime.workspace = Workspace::empty();
     }
-    Ok(runtime.lifecycle_snapshot())
+    let snapshot = runtime.lifecycle_snapshot();
+    drop(runtime);
+    if was_active {
+        state.terminals.stop_for_repository(&path);
+    }
+    Ok(snapshot)
 }
 
 #[tauri::command]
@@ -169,6 +202,79 @@ fn review_task(
     mutate_workspace(state, |workspace| workspace.review_task(&task_id, approved))
 }
 
+#[tauri::command]
+fn terminal_sessions(
+    task_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<TerminalSessionSnapshot>, String> {
+    let repository_root = active_repository_root(&state)?;
+    state.terminals.snapshots(&repository_root, &task_id)
+}
+
+#[tauri::command]
+fn spawn_terminal_instances(
+    provider: TerminalProvider,
+    count: u8,
+    task_id: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Vec<TerminalSessionSnapshot>, String> {
+    let repository_root = {
+        let runtime = lock_runtime(&state)?;
+        let snapshot = runtime.workspace.snapshot();
+        if !snapshot.tasks.iter().any(|task| task.id == task_id) {
+            return Err("the selected task is unavailable".to_owned());
+        }
+        snapshot
+            .repository
+            .map(|repository| repository.root)
+            .ok_or_else(|| "no active repository is available".to_owned())?
+    };
+    state
+        .terminals
+        .spawn(&app, provider, count, &task_id, &repository_root)
+}
+
+#[tauri::command]
+fn terminal_output(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<TerminalOutputSnapshot, String> {
+    state.terminals.output(&session_id)
+}
+
+#[tauri::command]
+fn write_terminal_input(
+    session_id: String,
+    data: Vec<u8>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.terminals.write(&session_id, &data)
+}
+
+#[tauri::command]
+fn resize_terminal(
+    session_id: String,
+    rows: u16,
+    columns: u16,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.terminals.resize(&session_id, rows, columns)
+}
+
+#[tauri::command]
+fn stop_terminal(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<TerminalSessionSnapshot, String> {
+    state.terminals.stop(&session_id)
+}
+
+#[tauri::command]
+fn close_terminal(session_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.terminals.close(&session_id)
+}
+
 fn mutate_workspace(
     state: State<'_, AppState>,
     operation: impl FnOnce(&mut Workspace) -> Result<(), axio_core::CoreError>,
@@ -208,6 +314,7 @@ pub fn run() {
                 .join("workspace-state");
             app.manage(AppState {
                 runtime: Mutex::new(initialize_runtime(state_directory)),
+                terminals: TerminalManager::new()?,
             });
             Ok(())
         })
@@ -225,10 +332,26 @@ pub fn run() {
             create_task,
             send_direction,
             review_task,
+            terminal_sessions,
+            spawn_terminal_instances,
+            terminal_output,
+            write_terminal_input,
+            resize_terminal,
+            stop_terminal,
+            close_terminal,
             window_action
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Axio");
+}
+
+fn active_repository_root(state: &State<'_, AppState>) -> Result<String, String> {
+    lock_runtime(state)?
+        .workspace
+        .snapshot()
+        .repository
+        .map(|repository| repository.root)
+        .ok_or_else(|| "no active repository is available".to_owned())
 }
 
 fn lock_runtime<'a>(

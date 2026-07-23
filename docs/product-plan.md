@@ -65,6 +65,12 @@ Acceptance:
 **User result:** one timeline explains what every attached agent did and what
 needs attention now.
 
+The first terminal substrate is implemented: task-scoped, multi-pane native
+PTYs stream bounded output to ANSI-capable renderers and support input, resize,
+stop, and exit status. Connector normalization, durable/redacted events,
+backpressure guarantees, search, export, and restart reconciliation remain
+inside this outcome.
+
 Scope:
 
 - PTY lifecycle, output streaming, input, resize, backpressure, and exit status.

@@ -59,9 +59,21 @@ git -C repos/axio pull --ff-only
 Commit and push inside `repos/axio` first, then commit the new submodule pointer
 in `axio-workspace`.
 
-## The UI looks complete but nothing reaches an agent
+## A Terminal pane says an agent could not be launched
 
-That is the current expected limitation. Agent, terminal, Git, diff, and plan
-content is demo state. See [`status-and-direction.md`](status-and-direction.md)
-for the precise implementation boundary and [`product-plan.md`](product-plan.md)
-for the work required to make it real.
+Axio resolves the provider executable from its own inherited `PATH`. Confirm
+the same desktop environment can find `codex`, `claude`, or `opencode`, then
+restart Axio after changing `PATH`. Authentication remains inside the
+provider's terminal flow.
+
+Terminal mode starts real processes in the selected repository root. It does
+not create worktrees or isolate concurrent agents yet, so do not let multiple
+panes edit the same files unless that overlap is intentional.
+
+## Directions do not reach a Terminal agent
+
+Terminal panes are real interactive processes, but composer directions and
+persisted agent cards are not connected to them yet. Enter prompts directly in
+the desired pane. Git worktrees, complete diff, and plan content remain
+incomplete. See [`status-and-direction.md`](status-and-direction.md) for the
+precise boundary.

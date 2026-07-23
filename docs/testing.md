@@ -28,10 +28,13 @@ paths, per-repository session isolation, two-slot corruption recovery, source
 directory safety, and schema-v1-to-v2 migration. A desktop-runtime integration
 test reconstructs the runtime from disk and verifies that task creation,
 directions, reviews, agent status, and selection survive restart.
+Two terminal-runtime tests verify spawn limits and the bounded replay buffer.
+Five TypeScript tests cover task activity ordering, repository-tree behavior,
+and terminal provider/count controls.
 
 There are currently no automated tests for the CLI argument parser, browser
-interactions, accessibility tree, processes, PTYs, installers, or native
-folder-dialog behavior.
+interactions, accessibility tree, live provider processes, PTY I/O, installers,
+or native folder-dialog behavior.
 
 ## Desktop interaction checklist
 
@@ -51,6 +54,10 @@ For any desktop change, verify in the native Tauri window:
 - focus mode enters/exits, clears hidden-panel semantics, and restores the
   previous layout without losing the selected task;
 - task/worktree selection updates the timeline;
+- Terminal mode can launch multiple Codex, Claude Code, OpenCode, and shell
+  panes; each accepts input, resizes, reports exit, stops independently, and
+  leaves no process running after its repository closes or Axio is force-closed
+  on Windows;
 - agent lifecycle buttons show valid transitions and errors;
 - task creation keeps invalid/recoverable errors in the dialog, while valid
   creation, directions, and review decisions update through Tauri IPC;

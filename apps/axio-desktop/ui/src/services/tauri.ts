@@ -1,17 +1,31 @@
-import type { AgentStatus, RepositoryFileContent, WorkspaceLifecycleSnapshot, WorkspaceSnapshot } from "../types";
+import type {
+  AgentStatus,
+  RepositoryFileContent,
+  TerminalExitEvent,
+  TerminalOutputEvent,
+  TerminalOutputSnapshot,
+  TerminalProvider,
+  TerminalSessionSnapshot,
+  WorkspaceLifecycleSnapshot,
+  WorkspaceSnapshot,
+} from "../types";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
+type Unlisten = () => void;
+type Listen = <T>(event: string, handler: (event: { payload: T }) => void) => Promise<Unlisten>;
 
 declare global {
   interface Window {
     __TAURI__?: {
       core?: { invoke?: Invoke };
+      event?: { listen?: Listen };
       window?: { getCurrentWindow?: () => { startDragging?: () => Promise<void> } };
     };
   }
 }
 
 const invoke = window.__TAURI__?.core?.invoke;
+const listen = window.__TAURI__?.event?.listen;
 
 export const isNative = Boolean(invoke);
 
@@ -65,6 +79,44 @@ export function reviewTask(taskId: string, approved: boolean) {
 
 export function setAgentStatus(id: string, next: AgentStatus) {
   return invoke?.<WorkspaceSnapshot>("set_agent_status", { id, next });
+}
+
+export function terminalSessions(taskId: string) {
+  return invoke?.<TerminalSessionSnapshot[]>("terminal_sessions", { taskId });
+}
+
+export function spawnTerminalInstances(provider: TerminalProvider, count: number, taskId: string) {
+  return invoke?.<TerminalSessionSnapshot[]>("spawn_terminal_instances", { provider, count, taskId });
+}
+
+export function terminalOutput(sessionId: string) {
+  return invoke?.<TerminalOutputSnapshot>("terminal_output", { sessionId });
+}
+
+export function writeTerminalInput(sessionId: string, data: Uint8Array) {
+  return invoke?.<void>("write_terminal_input", { sessionId, data: Array.from(data) });
+}
+
+export function resizeTerminal(sessionId: string, rows: number, columns: number) {
+  return invoke?.<void>("resize_terminal", { sessionId, rows, columns });
+}
+
+export function stopTerminal(sessionId: string) {
+  return invoke?.<TerminalSessionSnapshot>("stop_terminal", { sessionId });
+}
+
+export function closeTerminal(sessionId: string) {
+  return invoke?.<void>("close_terminal", { sessionId });
+}
+
+export function listenTerminalOutput(handler: (event: TerminalOutputEvent) => void) {
+  return listen?.<TerminalOutputEvent>("terminal-output", (event) => handler(event.payload))
+    ?? Promise.resolve(() => {});
+}
+
+export function listenTerminalExit(handler: (event: TerminalExitEvent) => void) {
+  return listen?.<TerminalExitEvent>("terminal-exit", (event) => handler(event.payload))
+    ?? Promise.resolve(() => {});
 }
 
 export async function runWindowAction(action: string) {

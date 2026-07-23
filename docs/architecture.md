@@ -29,6 +29,15 @@ Extra windows are projections of that state, not independently persisted apps.
 This keeps process ownership, approvals, worktree locks, and recovery behavior
 consistent while allowing a compact focused-task window when useful.
 
+PTY ownership is currently a deliberate desktop-only subsystem in
+`src-tauri/src/terminal.rs`. It launches only known local provider commands,
+keeps process handles and bounded output in memory, emits offset binary chunks
+to the webview, and stops repository-scoped sessions when that workspace is
+closed or replaced. On Windows, all launched processes share a kill-on-close
+job object so a forced Axio exit also tears down their process trees.
+Cross-boundary terminal metadata lives in `axio-protocol`; terminal output is
+not part of durable `WorkspaceSession` state.
+
 Frontend entry files are composition surfaces, not feature containers. Vite
 loads `ui/index.html` and `ui/src/main.tsx`; `ui/src/App.tsx` owns application
 state and cross-feature wiring. Semantic views belong in `ui/src/components/`,
@@ -53,7 +62,7 @@ The current desktop composition is:
 
 ```text
 native titlebar
-  workspace panel | task timeline | context tool dock
+  workspace panel | Activity / Canvas / Terminal | context tool dock
 bottom status bar
 ```
 

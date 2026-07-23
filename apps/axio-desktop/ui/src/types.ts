@@ -3,6 +3,8 @@ export type AgentStatus = "idle" | "starting" | "running" | "waiting" | "complet
 export type TaskStatus = "active" | "waiting" | "completed";
 export type ReviewStatus = "none" | "pending" | "approved" | "rejected";
 export type ActivityKind = "message" | "tool" | "change" | "approval" | "status";
+export type TerminalProvider = "shell" | "codex" | "claude_code" | "open_code";
+export type TerminalSessionStatus = "running" | "stopping" | "exited" | "failed";
 
 export interface AgentSession {
   id: string;
@@ -80,6 +82,36 @@ export interface WorkspaceLifecycleSnapshot {
   persistence_warning?: string | null;
 }
 
+export interface TerminalSessionSnapshot {
+  id: string;
+  provider: TerminalProvider;
+  ordinal: number;
+  status: TerminalSessionStatus;
+  task_id: string;
+  repository_root: string;
+  cwd: string;
+  pid?: number | null;
+  exit_code?: number | null;
+}
+
+export interface TerminalOutputSnapshot {
+  data: number[];
+  start_offset: number;
+  end_offset: number;
+}
+
+export interface TerminalOutputEvent {
+  session_id: string;
+  offset: number;
+  data: number[];
+}
+
+export interface TerminalExitEvent {
+  session_id: string;
+  status: TerminalSessionStatus;
+  exit_code?: number | null;
+}
+
 export type SidebarPanel = "tasks" | "agents";
 export type ContextPanel = "browser" | "files" | "diff" | "terminal" | "plan";
-export type WorkMode = "activity" | "canvas";
+export type WorkMode = "activity" | "canvas" | "terminal";
