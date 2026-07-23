@@ -15,6 +15,11 @@ export interface TerminalReplayBatch {
   gap: boolean;
 }
 
+export interface TerminalPreviewBatch {
+  byteCount: number;
+  text: string;
+}
+
 export class TerminalOutputRouter {
   private readonly handlers = new Map<string, Set<TerminalOutputHandler>>();
 
@@ -122,6 +127,69 @@ export class TerminalReplayBuffer {
 
     if (this.head > 1_024 && this.head * 2 > this.events.length) {
       this.events.splice(0, this.head);
+      this.head = 0;
+    }
+  }
+}
+
+export class TerminalPreviewBuffer {
+  private readonly chunks: string[] = [];
+  private characterLength = 0;
+  private capturedBytes = 0;
+  private head = 0;
+  private headOffset = 0;
+
+  constructor(private readonly maximumCharacters: number) {
+    if (!Number.isInteger(maximumCharacters) || maximumCharacters < 1) {
+      throw new RangeError("terminal preview limit must be a positive integer");
+    }
+  }
+
+  append(text: string, byteCount: number) {
+    this.capturedBytes += byteCount;
+    if (!text) return;
+    this.chunks.push(text);
+    this.characterLength += text.length;
+    this.trimToLimit();
+  }
+
+  drain(): TerminalPreviewBatch {
+    const text = this.chunks
+      .slice(this.head)
+      .map((chunk, index) => index === 0 ? chunk.slice(this.headOffset) : chunk)
+      .join("");
+    const batch = { byteCount: this.capturedBytes, text };
+    this.clear();
+    return batch;
+  }
+
+  private clear() {
+    this.chunks.length = 0;
+    this.characterLength = 0;
+    this.capturedBytes = 0;
+    this.head = 0;
+    this.headOffset = 0;
+  }
+
+  private trimToLimit() {
+    let overflow = this.characterLength - this.maximumCharacters;
+    if (overflow <= 0) return;
+    this.characterLength = this.maximumCharacters;
+
+    while (overflow > 0) {
+      const chunk = this.chunks[this.head];
+      const available = chunk.length - this.headOffset;
+      if (overflow < available) {
+        this.headOffset += overflow;
+        break;
+      }
+      overflow -= available;
+      this.head += 1;
+      this.headOffset = 0;
+    }
+
+    if (this.head > 1_024 && this.head * 2 > this.chunks.length) {
+      this.chunks.splice(0, this.head);
       this.head = 0;
     }
   }

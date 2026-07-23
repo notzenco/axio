@@ -1,7 +1,11 @@
 import { Open20Regular, WindowConsole20Regular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import { terminalProviderLabel } from "../../data/terminal-providers";
-import { cleanTerminalText, TerminalReplayBuffer } from "../../data/terminal-output";
+import {
+  cleanTerminalText,
+  TerminalPreviewBuffer,
+  TerminalReplayBuffer,
+} from "../../data/terminal-output";
 import { listenTerminalOutput, terminalOutput } from "../../services/tauri";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
 
@@ -38,22 +42,32 @@ export function OutputTool({ active, onOpenTerminal, sessions }: { active: boole
     let unlisten = () => {};
     const decoder = new TextDecoder();
     const pending = new TerminalReplayBuffer();
-    let pendingText = "";
+    const preview = new TerminalPreviewBuffer(MAX_PREVIEW_CHARACTERS);
     const flush = () => {
       frame = 0;
-      if (!pendingText || disposed) return;
-      const addition = pendingText;
-      pendingText = "";
-      setText((current) => cleanTerminalText(`${current}${addition}`).slice(-MAX_PREVIEW_CHARACTERS));
+      if (disposed) return;
+      const addition = preview.drain();
+      if (addition.byteCount > 0) {
+        setByteCount((current) => current + addition.byteCount);
+      }
+      if (addition.text) {
+        setText((current) => cleanTerminalText(`${current}${addition.text}`).slice(-MAX_PREVIEW_CHARACTERS));
+      }
+    };
+    const scheduleFlush = () => {
+      if (!frame) frame = requestAnimationFrame(flush);
     };
     const append = (event: TerminalOutputEvent) => {
       const eventEnd = event.offset + event.data.length;
       if (eventEnd <= nextOffset) return;
       const start = Math.max(0, nextOffset - event.offset);
-      pendingText += decoder.decode(Uint8Array.from(event.data.slice(start)), { stream: true });
-      setByteCount((current) => current + event.data.length - start);
+      const byteLength = event.data.length - start;
+      preview.append(
+        decoder.decode(Uint8Array.from(event.data.slice(start)), { stream: true }),
+        byteLength,
+      );
       nextOffset = eventEnd;
-      if (!frame) frame = requestAnimationFrame(flush);
+      scheduleFlush();
     };
 
     void listenTerminalOutput((event) => {
@@ -75,7 +89,8 @@ export function OutputTool({ active, onOpenTerminal, sessions }: { active: boole
         ready = true;
         const replayBatch = pending.drain(selectedSession.id, nextOffset);
         if (replayBatch.gap) {
-          pendingText += "\n[Output skipped while replay was loading]\n";
+          preview.append("\n[Output skipped while replay was loading]\n", 0);
+          scheduleFlush();
         }
         replayBatch.events.forEach(append);
       } catch {

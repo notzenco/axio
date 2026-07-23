@@ -3,6 +3,7 @@ import { agentRuntimes, sessionsForTask, taskStateSteps } from "../src/data/task
 import {
   cleanTerminalText,
   TerminalOutputRouter,
+  TerminalPreviewBuffer,
   TerminalReplayBuffer,
 } from "../src/data/terminal-output";
 import { TerminalRenderQueue } from "../src/data/terminal-rendering";
@@ -164,5 +165,26 @@ describe("task runtime projections", () => {
     const coveredReplay = covered.drain("covered", 6);
     expect(coveredReplay.gap).toBe(false);
     expect(coveredReplay.events.map((event) => event.offset)).toEqual([6, 7]);
+  });
+
+  test("bounds and batches live preview updates across 12 noisy sessions", () => {
+    const previews = Array.from({ length: 12 }, () => new TerminalPreviewBuffer(4_096));
+
+    for (let event = 0; event < 2_400_000; event += 1) {
+      const session = event % previews.length;
+      previews[session].append(String.fromCharCode(65 + (event % 26)), 1);
+    }
+
+    previews.forEach((preview) => {
+      const batch = preview.drain();
+      expect(batch.byteCount).toBe(200_000);
+      expect(batch.text).toHaveLength(4_096);
+      expect(preview.drain()).toEqual({ byteCount: 0, text: "" });
+    });
+
+    const suffix = new TerminalPreviewBuffer(4);
+    suffix.append("abc", 2);
+    suffix.append("def", 3);
+    expect(suffix.drain()).toEqual({ byteCount: 5, text: "cdef" });
   });
 });
