@@ -43,6 +43,9 @@ repositories and is not continued by this project.
 - Made compact panels mutually exclusive and scrim-backed, with contained
   keyboard focus, Escape dismissal, focus restoration, and consistent focus
   mode semantics.
+- Batched PTY output and burst input, removed terminal I/O from the global
+  session lock, and stopped redundant PTY resizes that slowed interactive
+  coding-agent terminals.
 - Raised muted-text contrast, reduced routine timeline chrome, added non-colour
   task/agent states, and aligned native window controls to the right edge.
 
