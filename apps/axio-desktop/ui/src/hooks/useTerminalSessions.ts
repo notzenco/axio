@@ -9,6 +9,7 @@ import {
   listenTerminalExit,
   spawnTerminalInstances,
   stopTerminal,
+  terminalCapacity,
   terminalSessions,
 } from "../services/tauri";
 import type { TerminalProvider, TerminalSessionSnapshot } from "../types";
@@ -16,7 +17,9 @@ import type { TerminalProvider, TerminalSessionSnapshot } from "../types";
 export function useTerminalSessions(taskId: string, onError: (message: string) => void) {
   const [sessions, setSessions] = useState<TerminalSessionSnapshot[]>([]);
   const [busy, setBusy] = useState(false);
+  const [activeCount, setActiveCount] = useState(0);
   const refreshVersion = useRef(0);
+  const capacityVersion = useRef(0);
   const activeTaskId = useRef(taskId);
   activeTaskId.current = taskId;
 
@@ -36,6 +39,20 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
     }
   }, [onError, taskId]);
 
+  const refreshCapacity = useCallback(async () => {
+    const version = ++capacityVersion.current;
+    if (!isNative) {
+      if (version === capacityVersion.current) setActiveCount(0);
+      return;
+    }
+    try {
+      const count = await terminalCapacity() ?? 0;
+      if (version === capacityVersion.current) setActiveCount(count);
+    } catch (error) {
+      if (version === capacityVersion.current) onError(String(error));
+    }
+  }, [onError]);
+
   useEffect(() => {
     setSessions([]);
     setBusy(false);
@@ -44,6 +61,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
     void listenTerminalExit((event) => {
       if (disposed) return;
       setSessions((current) => applyTerminalExit(current, event));
+      void refreshCapacity();
     }).then(
       (dispose) => {
         if (disposed) {
@@ -52,6 +70,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
         }
         unlisten = dispose;
         void refresh();
+        void refreshCapacity();
       },
       (error) => {
         if (!disposed) {
@@ -63,9 +82,10 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
     return () => {
       disposed = true;
       refreshVersion.current += 1;
+      capacityVersion.current += 1;
       unlisten();
     };
-  }, [onError, refresh]);
+  }, [onError, refresh, refreshCapacity]);
 
   const spawn = async (provider: TerminalProvider, count: number) => {
     const spawnTaskId = taskId;
@@ -79,6 +99,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
       if (activeTaskId.current === spawnTaskId) onError(String(error));
       return false;
     } finally {
+      void refreshCapacity();
       if (activeTaskId.current === spawnTaskId) setBusy(false);
     }
   };
@@ -103,7 +124,7 @@ export function useTerminalSessions(taskId: string, onError: (message: string) =
     }
   };
 
-  return { busy, close, refresh, sessions, spawn, stop };
+  return { activeCount, busy, close, refresh, sessions, spawn, stop };
 }
 
 export type TerminalSessionController = ReturnType<typeof useTerminalSessions>;

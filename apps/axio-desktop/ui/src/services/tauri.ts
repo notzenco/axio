@@ -85,6 +85,10 @@ export function terminalSessions(taskId: string) {
   return invoke?.<TerminalSessionSnapshot[]>("terminal_sessions", { taskId });
 }
 
+export function terminalCapacity() {
+  return invoke?.<number>("terminal_capacity");
+}
+
 export function spawnTerminalInstances(provider: TerminalProvider, count: number, taskId: string) {
   return invoke?.<TerminalSessionSnapshot[]>("spawn_terminal_instances", { provider, count, taskId });
 }

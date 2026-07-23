@@ -165,6 +165,17 @@ impl TerminalManager {
             .collect())
     }
 
+    pub fn active_count(&self) -> Result<usize, String> {
+        let sessions = self
+            .sessions
+            .lock()
+            .map_err(|error| format!("terminal sessions are unavailable: {error}"))?;
+        Ok(sessions
+            .values()
+            .filter(|session| occupies_session_capacity(session.snapshot.status))
+            .count())
+    }
+
     pub fn output(&self, session_id: &str) -> Result<TerminalOutputSnapshot, String> {
         let output = {
             let sessions = self

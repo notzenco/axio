@@ -218,6 +218,11 @@ fn terminal_sessions(
     state.terminals.snapshots(&repository_root, &task_id)
 }
 
+#[tauri::command]
+fn terminal_capacity(state: State<'_, AppState>) -> Result<usize, String> {
+    state.terminals.active_count()
+}
+
 #[tauri::command(async)]
 fn spawn_terminal_instances(
     provider: TerminalProvider,
@@ -340,6 +345,7 @@ pub fn run() {
             send_direction,
             review_task,
             terminal_sessions,
+            terminal_capacity,
             spawn_terminal_instances,
             terminal_output,
             write_terminal_input,
