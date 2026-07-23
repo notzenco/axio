@@ -9,6 +9,7 @@ import {
 } from "../../services/tauri";
 import { subscribeTerminalOutput } from "../../services/terminal-events";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
+import { TerminalInputBuffer } from "../../data/terminal-input";
 import { terminalProviderLabel } from "../../data/terminal-providers";
 import { TerminalResizeScheduler } from "../../data/terminal-resize";
 
@@ -77,17 +78,24 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     let disposed = false;
     let unlisten = () => {};
     let inputTimer = 0;
-    let inputBuffer: number[] = [];
+    let inputWrites = Promise.resolve();
+    const inputBuffer = new TerminalInputBuffer();
     const flushInput = () => {
       inputTimer = 0;
-      if (disposed || inputBuffer.length === 0) return;
-      const data = Uint8Array.from(inputBuffer);
-      inputBuffer = [];
-      void writeTerminalInput(session.id, data)?.catch((error) => onError(String(error)));
+      if (disposed) return;
+      for (const data of inputBuffer.drain()) {
+        inputWrites = inputWrites
+          .then(async () => {
+            await writeTerminalInput(session.id, data);
+          })
+          .catch((error) => {
+            if (!disposed) onError(String(error));
+          });
+      }
     };
 
     const inputDisposable = terminal.onData((data) => {
-      inputBuffer.push(...encoder.encode(data));
+      inputBuffer.append(encoder.encode(data));
       if (!inputTimer) inputTimer = window.setTimeout(flushInput, 8);
     });
     const resizeScheduler = new TerminalResizeScheduler(({ rows, columns }) => {

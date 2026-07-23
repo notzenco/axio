@@ -1,4 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import {
+  MAX_TERMINAL_INPUT_BYTES,
+  TerminalInputBuffer,
+} from "../src/data/terminal-input";
 import { normalizeTerminalCount, terminalProviderLabel } from "../src/data/terminal-providers";
 import { TerminalResizeScheduler } from "../src/data/terminal-resize";
 
@@ -37,5 +41,36 @@ describe("terminal provider controls", () => {
     schedulers.forEach((scheduler) => scheduler.dispose());
     schedulers.forEach((scheduler) => scheduler.flush());
     expect(delivered.flat()).toHaveLength(12);
+  });
+
+  test("preserves multi-megabyte pastes in bounded batches across 12 sessions", () => {
+    const inputLength = (2 * 1024 * 1024) + 17;
+    const input = Uint8Array.from({ length: inputLength }, (_, index) => index % 251);
+
+    for (let session = 0; session < 12; session += 1) {
+      const buffer = new TerminalInputBuffer();
+      const firstBoundary = 131_071 + session;
+      buffer.append(input.subarray(0, firstBoundary));
+      buffer.append(input.subarray(firstBoundary, firstBoundary + 3));
+      buffer.append(input.subarray(firstBoundary + 3));
+
+      const batches = buffer.drain();
+      expect(batches).toHaveLength(Math.ceil(input.length / MAX_TERMINAL_INPUT_BYTES));
+      expect(batches.every((batch) => batch.length <= MAX_TERMINAL_INPUT_BYTES)).toBe(true);
+
+      let offset = 0;
+      for (const batch of batches) {
+        expect(batch).toEqual(input.subarray(offset, offset + batch.length));
+        offset += batch.length;
+      }
+      expect(offset).toBe(input.length);
+      expect(buffer.drain()).toEqual([]);
+    }
+  });
+
+  test("rejects invalid terminal input batch sizes", () => {
+    const buffer = new TerminalInputBuffer();
+    buffer.append(Uint8Array.of(1));
+    expect(() => buffer.drain(0)).toThrow(RangeError);
   });
 });
