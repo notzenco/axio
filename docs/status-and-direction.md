@@ -49,7 +49,7 @@ not implemented:
 | Review approval | Changes review/task status and appends an event. | Reading a real diff, staging, committing, merging, or returning feedback to an agent. |
 | Diff panel | Native builds show live changed paths, statuses, and available line totals; browser-only preview data remains representative. | Unified patches, hunk navigation, staged/unstaged grouping, and binary detail. |
 | Browser tool | Provides a working address/refresh shell and preview boundary. | Native embedded webview lifecycle and dev-server discovery. |
-| File explorer | Native builds show a bounded, searchable tree of tracked and untracked repository paths with manual refresh; browser-only runs identify their preview data. | File contents, watches, editing, and explicit worktree scoping. |
+| File explorer | Native builds show a bounded, searchable tree of tracked and untracked repository paths, safe read-only text previews up to 256 KiB, binary identification, and manual refresh; browser-only runs identify their preview data. | Filesystem watches, editing, and explicit worktree scoping. |
 | Output panel | Shows representative terminal output. | PTY/process streaming, input, resize, and exit status. |
 | Plan panel | Shows representative task steps. | Connector plan events and durable progress. |
 | Command palette | Switches demo tasks and invokes local UI actions. | Search across real repositories, commands, and sessions. |
@@ -67,7 +67,7 @@ process life.
 - Agent connector descriptors, authentication handoff, or process supervision.
 - PTY terminal sessions, structured tool events, logs, cancellation, or timeouts.
 - Git worktrees, complete diffs, staging, merge, or conflict flows.
-- File-content reading, filesystem watches, and editor handoff.
+- Filesystem watches, file editing, and editor handoff.
 - OS notifications, scheduled work, automations, or background daemon.
 - Remote execution, synchronization, accounts, billing, or hosted inference.
 - Installer bundles, signing, auto-update, rollback, or stable release channel.

@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
-use axio_core::{Workspace, discover_repository};
-use axio_protocol::{AgentStatus, WorkspaceSnapshot};
+use axio_core::{Workspace, discover_repository, read_repository_file as read_file};
+use axio_protocol::{AgentStatus, RepositoryFileContent, WorkspaceSnapshot};
 use tauri::State;
 
 struct AppState {
@@ -26,6 +26,23 @@ fn refresh_repository(state: State<'_, AppState>) -> Result<WorkspaceSnapshot, S
         .map_err(|error| format!("workspace state is unavailable: {error}"))?;
     workspace.attach_repository(repository);
     Ok(workspace.snapshot())
+}
+
+#[tauri::command]
+fn read_repository_file(
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<RepositoryFileContent, String> {
+    let workspace = state
+        .workspace
+        .lock()
+        .map_err(|error| format!("workspace state is unavailable: {error}"))?;
+    let snapshot = workspace.snapshot();
+    let repository = snapshot
+        .repository
+        .as_ref()
+        .ok_or_else(|| "no active repository is available".to_owned())?;
+    read_file(repository, &path).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -119,6 +136,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             workspace_snapshot,
             refresh_repository,
+            read_repository_file,
             set_agent_status,
             select_task,
             create_task,

@@ -3,13 +3,16 @@ use std::{
     env,
     error::Error,
     fmt,
+    fs::File,
+    io::Read,
     path::{Path, PathBuf},
     process::Command,
 };
 
-use axio_protocol::{RepositoryChange, RepositorySnapshot};
+use axio_protocol::{RepositoryChange, RepositoryFileContent, RepositorySnapshot};
 
 const MAX_REPOSITORY_FILES: usize = 2_500;
+const MAX_FILE_PREVIEW_BYTES: u64 = 256 * 1024;
 
 /// A failure to discover or inspect a local Git repository.
 #[derive(Debug)]
@@ -18,6 +21,11 @@ pub enum RepositoryError {
     GitUnavailable(std::io::Error),
     NotFound,
     Git(String),
+    InvalidPath(String),
+    FileRead {
+        path: String,
+        source: std::io::Error,
+    },
 }
 
 impl fmt::Display for RepositoryError {
@@ -29,6 +37,10 @@ impl fmt::Display for RepositoryError {
             Self::GitUnavailable(error) => write!(formatter, "Git is unavailable: {error}"),
             Self::NotFound => formatter.write_str("no Git repository was found"),
             Self::Git(message) => write!(formatter, "Git repository inspection failed: {message}"),
+            Self::InvalidPath(path) => {
+                write!(formatter, "path is outside the active repository: {path}")
+            }
+            Self::FileRead { path, source } => write!(formatter, "failed to read {path}: {source}"),
         }
     }
 }
@@ -50,6 +62,70 @@ pub fn discover_repository() -> Result<RepositorySnapshot, RepositoryError> {
         .find_map(|candidate| repository_root(candidate).ok())
         .ok_or(RepositoryError::NotFound)?;
     inspect_repository(&root)
+}
+
+/// Reads a bounded text preview without allowing paths to escape the repository.
+pub fn read_repository_file(
+    repository: &RepositorySnapshot,
+    path: &str,
+) -> Result<RepositoryFileContent, RepositoryError> {
+    let relative = Path::new(path);
+    if relative.is_absolute()
+        || relative
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        return Err(RepositoryError::InvalidPath(path.to_owned()));
+    }
+
+    let root = Path::new(&repository.root)
+        .canonicalize()
+        .map_err(|source| RepositoryError::FileRead {
+            path: repository.root.clone(),
+            source,
+        })?;
+    let target =
+        root.join(relative)
+            .canonicalize()
+            .map_err(|source| RepositoryError::FileRead {
+                path: path.to_owned(),
+                source,
+            })?;
+    if !target.starts_with(&root) {
+        return Err(RepositoryError::InvalidPath(path.to_owned()));
+    }
+
+    let size_bytes = target
+        .metadata()
+        .map_err(|source| RepositoryError::FileRead {
+            path: path.to_owned(),
+            source,
+        })?
+        .len();
+    let mut bytes = Vec::new();
+    File::open(&target)
+        .map_err(|source| RepositoryError::FileRead {
+            path: path.to_owned(),
+            source,
+        })?
+        .take(MAX_FILE_PREVIEW_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|source| RepositoryError::FileRead {
+            path: path.to_owned(),
+            source,
+        })?;
+    let truncated = bytes.len() as u64 > MAX_FILE_PREVIEW_BYTES;
+    bytes.truncate(MAX_FILE_PREVIEW_BYTES as usize);
+    let binary = bytes.contains(&0) || std::str::from_utf8(&bytes).is_err();
+    let content = (!binary).then(|| String::from_utf8_lossy(&bytes).into_owned());
+
+    Ok(RepositoryFileContent {
+        path: path.replace('\\', "/"),
+        content,
+        size_bytes,
+        truncated,
+        binary,
+    })
 }
 
 fn repository_root(candidate: &Path) -> Result<PathBuf, RepositoryError> {
@@ -200,7 +276,14 @@ fn normalize_git_path(path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_numstat, parse_status};
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use axio_protocol::RepositorySnapshot;
+
+    use super::{RepositoryError, parse_numstat, parse_status, read_repository_file};
 
     #[test]
     fn parses_git_status_and_line_stats() {
@@ -216,5 +299,35 @@ mod tests {
         assert_eq!(changes[0].deletions, Some(3));
         assert_eq!(changes[1].path, "docs/new note.md");
         assert_eq!(changes[2].path, "crates/new.rs");
+    }
+
+    #[test]
+    fn reads_text_inside_repository_and_rejects_parent_paths() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be valid")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("axio-repository-read-{unique}"));
+        fs::create_dir_all(root.join("src")).expect("test directory should be created");
+        fs::write(root.join("src/main.rs"), "fn main() {}\n").expect("test file should be written");
+        let repository = RepositorySnapshot {
+            root: root.to_string_lossy().into_owned(),
+            name: "example".to_owned(),
+            branch: "main".to_owned(),
+            files: vec!["src/main.rs".to_owned()],
+            files_truncated: false,
+            changes: Vec::new(),
+        };
+
+        let content =
+            read_repository_file(&repository, "src/main.rs").expect("text file should be readable");
+        assert_eq!(content.content.as_deref(), Some("fn main() {}\n"));
+        assert!(!content.binary);
+        assert!(matches!(
+            read_repository_file(&repository, "../outside"),
+            Err(RepositoryError::InvalidPath(_))
+        ));
+
+        fs::remove_dir_all(&root).expect("test directory should be removed");
     }
 }

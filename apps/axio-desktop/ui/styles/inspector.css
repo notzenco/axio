@@ -37,9 +37,12 @@
 .file-tree button:hover { background: rgba(255,255,255,.045); color: var(--text); }
 .file-tree button.active { background: color-mix(in srgb,var(--violet) 12%,transparent); box-shadow: inset 2px 0 var(--violet); color: #eeeaff; }
 .file-tree svg { width: 15px; height: 15px; color: var(--faint); }
-.file-preview { display: grid; gap: 6px; padding: 11px 12px; border-top: 1px solid var(--line); }
+.file-preview { display: grid; max-height: 42%; gap: 6px; padding: 11px 12px; overflow: hidden; border-top: 1px solid var(--line); }
 .file-preview strong { overflow: hidden; color: #c7cdd6; font: 8px "Cascadia Mono",Consolas,monospace; text-overflow: ellipsis; white-space: nowrap; }
 .file-preview p { margin: 0; color: var(--faint); font-size: 8px; line-height: 1.45; }
+.file-preview .file-preview-error { color: var(--red); }
+.repository-file-content { min-height: 90px; margin: 2px 0 0; overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: rgba(0,0,0,.22); }
+.repository-file-content code { display: block; min-width: max-content; padding: 8px; color: #aeb6c4; font: 8px/1.55 "Cascadia Mono",Consolas,monospace; white-space: pre; }
 .diff-file-list { display: grid; gap: 3px; padding: 0 10px 10px; }
 .diff-file-list button { display: flex; justify-content: space-between; gap: 10px; align-items: center; min-height: 31px; padding: 0 9px; border-radius: 7px; background: transparent; color: #9ca6b4; font: 9px "Cascadia Mono", Consolas, monospace; text-align: left; }
 .diff-file-list button:hover { background: rgba(255,255,255,.045); color: #d9dde4; }

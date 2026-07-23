@@ -1,4 +1,4 @@
-import type { AgentStatus, WorkspaceSnapshot } from "../types";
+import type { AgentStatus, RepositoryFileContent, WorkspaceSnapshot } from "../types";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -21,6 +21,10 @@ export function workspaceSnapshot() {
 
 export function refreshRepository() {
   return invoke?.<WorkspaceSnapshot>("refresh_repository");
+}
+
+export function readRepositoryFile(path: string) {
+  return invoke?.<RepositoryFileContent>("read_repository_file", { path });
 }
 
 export function selectTask(id: string) {

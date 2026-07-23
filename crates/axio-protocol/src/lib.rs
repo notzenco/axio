@@ -111,6 +111,16 @@ pub struct RepositorySnapshot {
     pub changes: Vec<RepositoryChange>,
 }
 
+/// A bounded read of one text file inside the active repository.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RepositoryFileContent {
+    pub path: String,
+    pub content: Option<String>,
+    pub size_bytes: u64,
+    pub truncated: bool,
+    pub binary: bool,
+}
+
 /// A serializable view of the current local workspace.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkspaceSnapshot {

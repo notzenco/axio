@@ -50,6 +50,14 @@ export interface RepositorySnapshot {
   changes: RepositoryChange[];
 }
 
+export interface RepositoryFileContent {
+  path: string;
+  content?: string | null;
+  size_bytes: number;
+  truncated: boolean;
+  binary: boolean;
+}
+
 export interface WorkspaceSnapshot {
   project: string;
   branch: string;

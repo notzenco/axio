@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ArrowClockwise20Regular, Code20Regular, Document20Regular, Folder20Regular, Search20Regular } from "@fluentui/react-icons";
 import { repositoryTree } from "../../data/repository-tree";
-import type { RepositorySnapshot } from "../../types";
+import { readRepositoryFile } from "../../services/tauri";
+import type { RepositoryFileContent, RepositorySnapshot } from "../../types";
 
 const previewFiles = [
   "apps/axio-desktop/ui/src/App.tsx",
@@ -14,21 +15,52 @@ export function FileExplorerTool({ active, onRefresh, repository }: { active: bo
   const paths = repository?.files ?? previewFiles;
   const [selected, setSelected] = useState(paths[0] ?? "");
   const [query, setQuery] = useState("");
+  const [preview, setPreview] = useState<RepositoryFileContent | null>(null);
+  const [previewError, setPreviewError] = useState("");
+  const [loading, setLoading] = useState(false);
   const visible = useMemo(() => repositoryTree(paths, query), [paths, query]);
 
   useEffect(() => {
-    if (!selected || !paths.includes(selected)) setSelected(paths[0] ?? "");
+    if (!selected || !paths.includes(selected)) {
+      setSelected(paths[0] ?? "");
+      setPreview(null);
+    }
   }, [paths, selected]);
+
+  const selectFile = async (path: string) => {
+    setSelected(path);
+    setPreview(null);
+    setPreviewError("");
+    setLoading(true);
+    try {
+      const content = await readRepositoryFile(path);
+      if (content) setPreview(content);
+      else setPreviewError("File contents are available in the native desktop build.");
+    } catch (error) {
+      setPreviewError(String(error));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section className={`inspector-panel files-panel${active ? " active" : ""}`} id="panel-files" role="tabpanel">
       <label className="file-search"><Search20Regular /><input type="search" placeholder="Filter files" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
       <div className="file-tree" role="tree" aria-label="Workspace files">
-        {visible.map((entry) => <button key={entry.path} type="button" role="treeitem" aria-selected={!entry.folder && selected === entry.path} className={selected === entry.path ? "active" : ""} style={{ "--tree-depth": entry.depth } as CSSProperties} onClick={() => !entry.folder && setSelected(entry.path)}>{entry.folder ? <Folder20Regular /> : entry.name.endsWith(".tsx") || entry.name.endsWith(".rs") ? <Code20Regular /> : <Document20Regular />}<span>{entry.name}</span></button>)}
+        {visible.map((entry) => <button key={entry.path} type="button" role="treeitem" aria-selected={!entry.folder && selected === entry.path} className={selected === entry.path ? "active" : ""} style={{ "--tree-depth": entry.depth } as CSSProperties} onClick={() => { if (!entry.folder) void selectFile(entry.path); }}>{entry.folder ? <Folder20Regular /> : entry.name.endsWith(".tsx") || entry.name.endsWith(".rs") ? <Code20Regular /> : <Document20Regular />}<span>{entry.name}</span></button>)}
       </div>
       <div className="file-preview">
         <span className="eyebrow">Selected file</span><strong>{selected}</strong>
-        <p>{repository ? "Discovered from the active Git repository. Content preview is the next filesystem boundary." : "Preview data. Launch the native desktop build to inspect a real repository."}</p>
+        {loading && <p>Reading from the active repository…</p>}
+        {!loading && previewError && <p className="file-preview-error">{previewError}</p>}
+        {!loading && preview?.binary && <p>Binary file · {preview.size_bytes.toLocaleString()} bytes</p>}
+        {!loading && preview?.content != null && (
+          <>
+            <p>{preview.size_bytes.toLocaleString()} bytes{preview.truncated ? " · preview limited to 256 KiB" : ""}</p>
+            <pre className="repository-file-content"><code>{preview.content}</code></pre>
+          </>
+        )}
+        {!loading && !preview && !previewError && <p>{repository ? "Select a file to load a safe, read-only preview." : "Preview data. Launch the native desktop build to inspect a real repository."}</p>}
       </div>
       <footer className="tool-status">
         <span><i className={repository ? "live" : ""}></i>{repository ? `${repository.files.length}${repository.files_truncated ? "+" : ""} files` : "Preview data"}</span>

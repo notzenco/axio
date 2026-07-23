@@ -189,6 +189,29 @@ Interaction verification:
 
 final result: passed
 
+## Native repository file preview — 2026-07-23
+
+The release executable was rebuilt and inspected through native Windows UI
+automation.
+
+- Files presented 169 real repository paths and the safe-preview instruction.
+- Selecting `AGENTS.md` invoked the Rust file-read boundary and rendered the
+  actual 2,213-byte document with monospaced, scrollable source content.
+- The preview remained bounded inside the resizable context dock without
+  creating document-level overflow or displacing the composer.
+- The core rejects absolute and parent-component paths, resolves canonical
+  targets inside the repository root, identifies binary content, and limits
+  text reads to 256 KiB.
+- The native workspace reported nine current working-tree changes after the
+  preceding checkpoint, matching the independently inspected Git state.
+
+**Findings**
+
+- No actionable P0/P1/P2 layout or interaction issue was found in the native
+  file-preview flow.
+
+final result: passed
+
 ## Native live-repository slice — 2026-07-23
 
 The release executable was launched from the active Axio checkout and inspected

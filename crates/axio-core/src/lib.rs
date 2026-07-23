@@ -7,7 +7,7 @@ mod repository;
 mod workspace;
 
 pub use error::CoreError;
-pub use repository::{RepositoryError, discover_repository};
+pub use repository::{RepositoryError, discover_repository, read_repository_file};
 pub use workspace::Workspace;
 
 #[cfg(test)]
