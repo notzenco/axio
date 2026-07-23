@@ -48,15 +48,36 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    let firstFrame: number | undefined;
+    let secondFrame: number | undefined;
     workspaceLifecycle()?.then((lifecycle) => {
+      if (cancelled) return;
       setSnapshot(lifecycle.workspace);
       setRecentWorkspaces(lifecycle.recent_workspaces);
       if (lifecycle.persistence_warning) notify(lifecycle.persistence_warning);
+      if (lifecycle.workspace.repository) {
+        firstFrame = window.requestAnimationFrame(() => {
+          secondFrame = window.requestAnimationFrame(() => {
+            refreshRepository()?.then((refreshed) => {
+              if (!cancelled) setSnapshot(refreshed);
+            }).catch((error) => {
+              if (!cancelled) notify(`Repository refresh failed: ${error}`);
+            });
+          });
+        });
+      }
     }).catch((error) => {
+      if (cancelled) return;
       setSnapshot(copyFallbackSnapshot());
       notify(`Using local preview data: ${error}`);
     });
-    return () => window.clearTimeout(toastTimer.current);
+    return () => {
+      cancelled = true;
+      if (firstFrame !== undefined) window.cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(toastTimer.current);
+    };
   }, [notify]);
 
   const applyWorkspaceLifecycle = (lifecycle: Awaited<ReturnType<typeof openWorkspace>>) => {

@@ -10,7 +10,7 @@
 - `bun run --cwd apps/axio-desktop test:ui` - run focused desktop UI tests.
 - `bun run --cwd apps/axio-desktop build:vite` - build the React UI.
 - `bun run --cwd apps/axio-desktop dev` - run Vite and the Tauri desktop shell.
-- `cargo build --release -p axio-desktop --locked` - native release build.
+- `bun run --cwd apps/axio-desktop build` - native release build with embedded UI.
 
 ## Architecture
 
