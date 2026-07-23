@@ -348,8 +348,30 @@ pub fn run() {
             close_terminal,
             window_action
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run Axio");
+        .build(tauri::generate_context!())
+        .expect("failed to build Axio")
+        .run(|app, event| {
+            if matches!(
+                event,
+                tauri::RunEvent::Ready
+                    | tauri::RunEvent::Resumed
+                    | tauri::RunEvent::MainEventsCleared
+            ) && app.webview_windows().is_empty()
+            {
+                app.exit(0);
+                return;
+            }
+            if let tauri::RunEvent::WindowEvent {
+                label,
+                event: tauri::WindowEvent::CloseRequested { api, .. },
+                ..
+            } = event
+                && label == "main"
+            {
+                api.prevent_close();
+                app.exit(0);
+            }
+        });
 }
 
 fn active_repository_root(state: &State<'_, AppState>) -> Result<String, String> {
