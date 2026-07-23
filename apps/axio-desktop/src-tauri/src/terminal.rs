@@ -63,9 +63,25 @@ impl OutputBuffer {
     }
 }
 
+#[derive(Default)]
+struct SpawnCoordinator {
+    lock: Mutex<()>,
+}
+
+impl SpawnCoordinator {
+    fn run<T>(&self, operation: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+        let _guard = self
+            .lock
+            .lock()
+            .map_err(|error| format!("terminal launches are unavailable: {error}"))?;
+        operation()
+    }
+}
+
 /// Owns transient PTY processes for the lifetime of the desktop application.
 pub struct TerminalManager {
     sessions: Arc<Mutex<BTreeMap<String, TerminalSession>>>,
+    spawn_coordinator: SpawnCoordinator,
     next_id: AtomicU64,
     #[cfg(windows)]
     process_job: ProcessJob,
@@ -75,6 +91,7 @@ impl TerminalManager {
     pub fn new() -> Result<Self, String> {
         Ok(Self {
             sessions: Arc::new(Mutex::new(BTreeMap::new())),
+            spawn_coordinator: SpawnCoordinator::default(),
             next_id: AtomicU64::new(1),
             #[cfg(windows)]
             process_job: ProcessJob::new()?,
@@ -89,12 +106,24 @@ impl TerminalManager {
         task_id: &str,
         repository_root: &str,
     ) -> Result<Vec<TerminalSessionSnapshot>, String> {
+        self.spawn_coordinator
+            .run(|| self.spawn_batch(app, provider, count, task_id, repository_root))
+    }
+
+    fn spawn_batch(
+        &self,
+        app: &AppHandle,
+        provider: TerminalProvider,
+        count: u8,
+        task_id: &str,
+        repository_root: &str,
+    ) -> Result<Vec<TerminalSessionSnapshot>, String> {
         let current_count = self
             .sessions
             .lock()
             .map_err(|error| format!("terminal sessions are unavailable: {error}"))?
             .values()
-            .filter(|session| session.snapshot.status == TerminalSessionStatus::Running)
+            .filter(|session| occupies_session_capacity(session.snapshot.status))
             .count();
         validate_spawn_count(count, current_count)?;
         if !Path::new(repository_root).is_dir() {
@@ -480,6 +509,13 @@ fn validate_spawn_count(count: u8, current_count: usize) -> Result<(), String> {
     Ok(())
 }
 
+fn occupies_session_capacity(status: TerminalSessionStatus) -> bool {
+    matches!(
+        status,
+        TerminalSessionStatus::Running | TerminalSessionStatus::Stopping
+    )
+}
+
 fn provider_command(provider: TerminalProvider) -> CommandBuilder {
     match provider {
         TerminalProvider::Shell => CommandBuilder::new_default_prog(),
@@ -572,5 +608,57 @@ mod tests {
         assert!(validate_spawn_count(MAX_SPAWN_COUNT + 1, 0).is_err());
         assert!(validate_spawn_count(3, MAX_SESSIONS - 2).is_err());
         assert!(validate_spawn_count(2, MAX_SESSIONS - 2).is_ok());
+    }
+
+    #[test]
+    fn stopping_sessions_continue_to_occupy_capacity() {
+        assert!(occupies_session_capacity(TerminalSessionStatus::Running));
+        assert!(occupies_session_capacity(TerminalSessionStatus::Stopping));
+        assert!(!occupies_session_capacity(TerminalSessionStatus::Exited));
+        assert!(!occupies_session_capacity(TerminalSessionStatus::Failed));
+    }
+
+    #[test]
+    fn spawn_coordinator_serializes_sustained_contention() {
+        use std::sync::atomic::AtomicUsize;
+
+        const WORKERS: usize = 24;
+        const OPERATIONS_PER_WORKER: usize = 250;
+
+        let coordinator = Arc::new(SpawnCoordinator::default());
+        let active = Arc::new(AtomicUsize::new(0));
+        let maximum_active = Arc::new(AtomicUsize::new(0));
+        let completed = Arc::new(AtomicUsize::new(0));
+        let mut workers = Vec::with_capacity(WORKERS);
+
+        for _ in 0..WORKERS {
+            let coordinator = Arc::clone(&coordinator);
+            let active = Arc::clone(&active);
+            let maximum_active = Arc::clone(&maximum_active);
+            let completed = Arc::clone(&completed);
+            workers.push(thread::spawn(move || {
+                for _ in 0..OPERATIONS_PER_WORKER {
+                    coordinator
+                        .run(|| {
+                            let current = active.fetch_add(1, Ordering::SeqCst) + 1;
+                            maximum_active.fetch_max(current, Ordering::SeqCst);
+                            thread::yield_now();
+                            active.fetch_sub(1, Ordering::SeqCst);
+                            completed.fetch_add(1, Ordering::SeqCst);
+                            Ok(())
+                        })
+                        .expect("spawn coordinator should remain available");
+                }
+            }));
+        }
+        for worker in workers {
+            worker.join().expect("spawn worker should finish");
+        }
+
+        assert_eq!(maximum_active.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            completed.load(Ordering::SeqCst),
+            WORKERS * OPERATIONS_PER_WORKER
+        );
     }
 }

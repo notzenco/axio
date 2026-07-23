@@ -218,7 +218,7 @@ fn terminal_sessions(
     state.terminals.snapshots(&repository_root, &task_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn spawn_terminal_instances(
     provider: TerminalProvider,
     count: u8,
@@ -250,7 +250,7 @@ fn terminal_output(
     state.terminals.output(&session_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn write_terminal_input(
     session_id: String,
     data: Vec<u8>,
@@ -259,7 +259,7 @@ fn write_terminal_input(
     state.terminals.write(&session_id, &data)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn resize_terminal(
     session_id: String,
     rows: u16,
@@ -269,7 +269,7 @@ fn resize_terminal(
     state.terminals.resize(&session_id, rows, columns)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn stop_terminal(
     session_id: String,
     state: State<'_, AppState>,
@@ -277,7 +277,7 @@ fn stop_terminal(
     state.terminals.stop(&session_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn close_terminal(session_id: String, state: State<'_, AppState>) -> Result<(), String> {
     state.terminals.close(&session_id)
 }
