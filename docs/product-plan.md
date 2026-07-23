@@ -11,7 +11,7 @@ direction clearly states its target, context, and authority.
 
 Scope and detailed acceptance criteria are maintained in
 [`ui-improvement-plan.md`](ui-improvement-plan.md). The first reusable event,
-attention, composer, inspector, accessibility, and responsive primitives are
+attention, composer, context-tool, accessibility, and responsive primitives are
 implemented over demo state. Connect them to real workspace data without
 letting further visual polish disguise or delay the runtime outcomes below.
 

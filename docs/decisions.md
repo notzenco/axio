@@ -70,17 +70,19 @@ surface, not another model transport.
 **Consequence:** Prove a connector contract and lifecycle before expanding
 provider count.
 
-## D-007: contextual tools use one inspector
+## D-007: contextual tools use one resizable dock
 
-**Decision:** Diff, output, and plan share one optional right inspector. The
-left side is one collapsible workspace sidebar; there is no redundant icon rail.
+**Decision:** Browser, files, review, output, and plan share one optional
+resizable right dock with a compact vertical tool rail. The left side remains a
+separate resizable workspace panel for tasks, worktrees, and agents.
 
 **Why:** The task remains primary and side tools should not reserve permanent
-space or duplicate navigation.
+space. One bounded dock gives heterogeneous task tools stable ownership without
+turning them into top-level destinations or forcing them through review UI.
 
-**Consequence:** Both sidebars must independently return space to the task on
-wide windows. At 720px and below they are mutually exclusive, focus-contained
-overlays with predictable dismissal and focus restoration.
+**Consequence:** Both side panels persist bounded widths and independently
+return space to the task. At 720px and below they are mutually exclusive,
+focus-contained overlays with predictable dismissal and focus restoration.
 
 ## D-008: versions describe outcomes
 

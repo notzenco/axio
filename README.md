@@ -32,8 +32,9 @@ The current foundation contains:
 - an in-memory workspace state machine with tested task and agent transitions;
 - an automation-friendly CLI status surface;
 - a functional, responsive Tauri task workspace backed by the same Rust core;
-- a task-first timeline, collapsible workspace navigation, contextual
-  diff/output/plan inspector, native window controls, and local review gates;
+- a task-first timeline, resizable workspace navigation, a contextual
+  browser/files/review/output/plan tool dock, native window controls, and local
+  review gates;
 - inline task validation, explicit direction context, changed-file navigation,
   accessible focus handling, and mutually exclusive compact overlays;
 - pinned, least-privilege CI and public project policies.
@@ -43,16 +44,18 @@ marketplace, hosted inference service, billing system, or release history.
 
 ## Build
 
-Prerequisites are the stable Rust toolchain and the platform-specific
+Prerequisites are Bun, the stable Rust toolchain, and the platform-specific
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```sh
+bun install --cwd apps/axio-desktop
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli -- status --json
-cargo run -p axio-desktop
+bun run --cwd apps/axio-desktop build:vite
 cargo build --release -p axio-desktop --locked
+bun run --cwd apps/axio-desktop dev
 ```
 
 For a fresh computer, including the private coordination workspace and the

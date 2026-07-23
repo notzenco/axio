@@ -37,11 +37,15 @@ Install:
 - Git;
 - the stable Rust toolchain through `rustup`;
 - the platform-specific [Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/);
-- Node.js for the desktop JavaScript syntax check and, in the private
+- Bun for the React/Vite frontend;
+- Node.js for the repository verification wrapper and, in the private
   workspace, the website check.
 
-Axio's current desktop frontend is shipped directly from
-`apps/axio-desktop/ui`; it does not require a JavaScript package install.
+Install the pinned desktop frontend dependencies after cloning:
+
+```powershell
+bun install --cwd apps\axio-desktop
+```
 
 ## Verify the active product
 
@@ -53,14 +57,15 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli -- status --json
-node --check apps\axio-desktop\ui\app.js
+node scripts\check-ui.mjs
+bun run --cwd apps\axio-desktop build:vite
 cargo build --release -p axio-desktop --locked
 ```
 
 Run the desktop during development with:
 
 ```powershell
-cargo run -p axio-desktop
+bun run --cwd apps\axio-desktop dev
 ```
 
 In the private workspace, verify the website separately:

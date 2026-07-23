@@ -7,6 +7,8 @@ installer, signing flow, update channel, or rollback contract.
 ## Current development build
 
 ```powershell
+bun install --cwd apps\axio-desktop
+bun run --cwd apps\axio-desktop build:vite
 cargo build --release -p axio-desktop --locked
 ```
 

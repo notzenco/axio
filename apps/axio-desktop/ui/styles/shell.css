@@ -1,0 +1,56 @@
+.app-shell { display: grid; grid-template-rows: 44px minmax(0, 1fr) 27px; height: 100vh; overflow: hidden; border: 1px solid rgba(255,255,255,.08); background: linear-gradient(135deg, rgba(17,20,29,.965), rgba(6,8,13,.94) 58%, rgba(13,10,25,.95)); box-shadow: inset 0 0 90px rgba(124,92,255,.035); }
+.titlebar { z-index: 20; display: grid; grid-template-columns: 32px 82px minmax(120px, 178px) minmax(220px, 520px) 1fr 138px; gap: 8px; align-items: center; min-width: 0; padding-left: 9px; border-bottom: 1px solid var(--line); background: rgba(8,10,15,.74); backdrop-filter: blur(28px) saturate(140%); user-select: none; }
+.icon-button { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 9px; background: transparent; color: var(--muted); }
+.icon-button:hover { background: rgba(255,255,255,.07); color: var(--text); }
+.icon-button[aria-pressed="true"] { background: rgba(154,124,255,.16); box-shadow: inset 0 0 0 1px rgba(154,124,255,.18); color: #e4ddff; }
+.wordmark { display: flex; gap: 8px; align-items: center; font-weight: 680; letter-spacing: -.015em; }
+.axio-mark { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid rgba(154,124,255,.38); border-radius: 8px; background: linear-gradient(145deg, rgba(154,124,255,.4), rgba(103,217,231,.08)); box-shadow: inset 0 1px rgba(255,255,255,.12), 0 0 24px rgba(121,89,244,.16); color: #fff; font-size: 10px; }
+.project-pill, .command-trigger, .text-button { display: flex; align-items: center; height: 30px; min-width: 0; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.028); color: var(--muted); }
+.project-pill { gap: 8px; padding: 0 9px; }
+.project-pill #project-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-pill .mini-icon { margin-left: auto; }
+.project-light { width: 8px; height: 8px; border: 1px solid var(--cyan); border-radius: 50%; box-shadow: 0 0 10px rgba(103,217,231,.42), inset 0 0 0 2px rgba(8,10,15,.8); background: var(--cyan); }
+.command-trigger { justify-self: stretch; gap: 8px; padding: 0 9px; color: var(--faint); }
+.command-trigger span:nth-child(2) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.command-trigger kbd { margin-left: auto; }
+.titlebar-actions { display: flex; justify-content: flex-end; align-items: center; gap: 7px; }
+.local-pill { display: flex; gap: 6px; align-items: center; color: #8eaa93; font-size: 10px; }
+.local-pill i, .health-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 9px rgba(117,214,138,.55); }
+.text-button { gap: 6px; padding: 0 9px; font-size: 10px; }
+.text-button:hover, .project-pill:hover, .command-trigger:hover { border-color: var(--line-strong); background: rgba(255,255,255,.055); color: var(--text); }
+.window-controls { align-self: stretch; display: grid; grid-template-columns: repeat(3, 46px); }
+.window-controls button { border-radius: 0; background: transparent; color: #8992a0; }
+.window-controls button:hover { background: rgba(255,255,255,.075); color: white; }
+.window-controls .window-close:hover { background: #c42b3a; }
+.workspace-shell { position: relative; min-height: 0; display: grid; grid-template-columns: var(--sidebar-width) minmax(420px,1fr) var(--context-width); gap: 10px; padding: 10px; overflow: hidden; transition: grid-template-columns .2s cubic-bezier(.2,.75,.2,1); }
+.statusbar { z-index: 20; display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 8px; border-top: 1px solid var(--line); background: rgba(7,9,14,.78); backdrop-filter: blur(24px); color: #737c8a; font-size: 8px; user-select: none; }
+.statusbar > span, .statusbar button { display: flex; gap: 6px; align-items: center; height: 21px; padding: 0 7px; border-radius: 6px; background: transparent; color: inherit; white-space: nowrap; }
+.statusbar button:hover { background: rgba(255,255,255,.055); color: #bcc2cc; }
+.status-spacer { flex: 1; }
+.statusbar .status-local { color: #73957a; }
+.statusbar .health-dot { width: 5px; height: 5px; }
+.overlay-scrim { display: none; position: absolute; z-index: 14; inset: 0; width: 100%; background: rgba(2,4,8,.56); backdrop-filter: blur(2px); }
+.toast { position: fixed; z-index: 50; left: 50%; bottom: 42px; translate: -50% 18px; padding: 9px 12px; border-radius: 9px; color: #d9dde4; font-size: 9px; opacity: 0; pointer-events: none; transition: .2s ease; }
+.toast.visible { translate: -50% 0; opacity: 1; }
+body.statusbar-hidden .app-shell { grid-template-rows: 44px minmax(0, 1fr) 0; }
+body.statusbar-hidden .statusbar { display: none; }
+
+body.sidebar-hidden .workspace-shell { grid-template-columns: 0 minmax(420px,1fr) var(--context-width); }
+body.sidebar-hidden .sidebar { transform: translateX(-18px); opacity: 0; visibility: hidden; }
+body.inspector-hidden .workspace-shell { grid-template-columns: var(--sidebar-width) minmax(420px,1fr) 0; }
+body.inspector-hidden .inspector { transform: translateX(18px); opacity: 0; visibility: hidden; }
+body.sidebar-hidden.inspector-hidden .workspace-shell { grid-template-columns: 0 minmax(420px,1fr) 0; }
+body.focus-mode .workspace-shell { grid-template-columns: 0 minmax(320px,1fr) 0; padding-inline: 10px; }
+.focus-mode .sidebar, .focus-mode .inspector { overflow: hidden; opacity: 0; visibility: hidden; }
+.focus-mode #focus-toggle { border-color: rgba(154,124,255,.28); background: rgba(154,124,255,.12); color: #ddd6ff; }
+body.compact .event-card { padding-block: 10px; }
+.compact .timeline { gap: 7px; }
+.compact .event-card > p { margin-block: 7px; }
+
+.panel-resize-handle { position: absolute; z-index: 8; top: 0; bottom: 0; width: 9px; cursor: col-resize; touch-action: none; }
+.panel-resize-handle.left { right: -5px; }
+.panel-resize-handle.right { left: -5px; }
+.panel-resize-handle span { position: absolute; top: 50%; left: 3px; width: 3px; height: 42px; translate: 0 -50%; border-radius: 3px; background: transparent; transition: background .15s ease, box-shadow .15s ease; }
+.panel-resize-handle:hover span,
+.panel-resize-handle:focus-visible span,
+.resizing-panel .panel-resize-handle span { background: var(--violet); box-shadow: 0 0 12px color-mix(in srgb, var(--violet) 50%, transparent); }

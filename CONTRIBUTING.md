@@ -10,7 +10,7 @@ Before opening a pull request:
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-node --check apps/axio-desktop/ui/app.js
+node scripts/check-ui.mjs
 ```
 
 Desktop or native-boundary changes also require a release build and the manual

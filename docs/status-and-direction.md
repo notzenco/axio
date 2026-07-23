@@ -28,10 +28,10 @@ the same Rust core. The paused legacy switcher is not a second current app.
 | Native shell | Tauri window, drag/minimize/maximize/close, narrow command bridge, and restrictive CSP. | Native release build and manual Windows run. |
 | Task workspace | Task/worktree selection, chronological activity, explicit attention state, inline task validation, agent controls, directions, and review decisions. | Browser and native interaction verification. |
 | Navigation | Independently collapsible wide panels, mutually exclusive focus-contained compact overlays, focus mode, and a command palette with recovery state. | `design-qa.md` at desktop and compact viewports. |
-| Composer | Visible target, worktree, direction mode, review policy, and target-aware send label. | UI interaction and accessibility-tree verification. |
-| Context | Pinned/expanded inspector with changed-file navigation, completed command record, output wrapping, and read-only plan states. | UI interaction verification. |
-| Appearance | Glass intensity, compact density, reduced-motion override, and local browser-view persistence. | `localStorage` behavior in `ui/app.js`. |
-| Delivery checks | Windows CI runs formatting, Clippy, tests, and CLI JSON smoke; local verification adds JavaScript syntax, interaction QA, and native release compilation. | `.github/workflows/ci.yml`, `testing.md`, and the latest `design-qa.md`. |
+| Composer | Visible target, worktree, direction mode, review policy, target-aware send label, and configurable submission/default audience behavior. | UI interaction and accessibility-tree verification. |
+| Context tools | Independently resizable dock with browser, file explorer, changed-file review, command output, and plan surfaces; tool state survives switching. | UI interaction verification and `ui/src/components/context/`. |
+| Settings | Searchable Appearance, Workspace, Composer, and Accessibility categories with typed local persistence and reset. | `ui/src/hooks/useSettings.ts`, `ui/src/components/settings/`, and browser interaction verification. |
+| Delivery checks | Windows CI runs formatting, Clippy, tests, and CLI JSON smoke; local verification adds TypeScript checking, the Vite production build, interaction QA, and native release compilation. | `.github/workflows/ci.yml`, `testing.md`, and the latest `design-qa.md`. |
 | Documentation | Architecture, product, design, setup, references, security, testing, and release guidance. | This documentation index and link audit. |
 
 ## Functional but simulated
@@ -46,12 +46,14 @@ not implemented:
 | Composer | Appends a direction event to the selected timeline. | Routing to Codex, Claude Code, OpenCode, Pi, or custom connectors. |
 | Review approval | Changes review/task status and appends an event. | Reading a real diff, staging, committing, merging, or returning feedback to an agent. |
 | Diff panel | Shows representative code changes. | Git-backed file and hunk data. |
+| Browser tool | Provides a working address/refresh shell and preview boundary. | Native embedded webview lifecycle and dev-server discovery. |
+| File explorer | Provides filtering, selection, and representative worktree structure. | Native filesystem reads, watches, editing, and worktree scoping. |
 | Output panel | Shows representative terminal output. | PTY/process streaming, input, resize, and exit status. |
 | Plan panel | Shows representative task steps. | Connector plan events and durable progress. |
 | Command palette | Switches demo tasks and invokes local UI actions. | Search across real repositories, commands, and sessions. |
 | Status bar | Reflects current demo snapshot. | Live engine, Git, test, usage, and connector health. |
 
-The static browser preview intentionally uses a JavaScript fallback snapshot.
+The browser preview intentionally uses a typed fallback snapshot.
 The Tauri build calls Rust commands, but Rust currently initializes the same
 deterministic `Workspace::demo()` data and keeps it only for the process life.
 
@@ -73,9 +75,9 @@ deterministic `Workspace::demo()` data and keeps it only for the process life.
 - The demo state can make the interface appear more complete than the runtime;
   all product communication must preserve the distinction above.
 - Workspace state is protected by one process-local mutex and is lost on exit.
-- The UI is plain JavaScript with manual DOM rendering; this is acceptable for
-  the foundation but needs maintainability and automated interaction coverage
-  as behavior grows.
+- The UI now uses TypeScript, React, and Vite with feature-owned components,
+  hooks, services, fixtures, and styles. Automated interaction coverage still
+  needs to move from the manual release gate into CI as behavior grows.
 - The current Linux Tauri dependency chain includes `glib 0.18.5`. GitHub has an
   open moderate alert for unsound iterator implementations; the patched line
   begins at `0.20.0`, while Tauri's GTK3 stack currently selects `0.18.x`.

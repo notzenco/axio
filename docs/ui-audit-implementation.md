@@ -31,10 +31,14 @@ prototype data as live system state.
 
 ## Files expected to change
 
-- `apps/axio-desktop/ui/index.html`: interaction structure and semantic labels.
-- `apps/axio-desktop/ui/app.js`: local interaction state and validation.
-- `apps/axio-desktop/ui/styles.css`: responsive layout, hierarchy, contrast,
-  and component states.
+- `apps/axio-desktop/ui/index.html`: document and asset manifest.
+- `apps/axio-desktop/ui/src/App.tsx`: state and cross-feature wiring.
+- `apps/axio-desktop/ui/src/components/`: interaction structure and semantic labels.
+- `apps/axio-desktop/ui/src/hooks/`: reusable layout, appearance, and dialog behavior.
+- `apps/axio-desktop/ui/src/services/`: typed Tauri command boundary.
+- `apps/axio-desktop/ui/src/data/`: local preview fixtures.
+- `apps/axio-desktop/ui/styles.css`: stylesheet manifest.
+- `apps/axio-desktop/ui/styles/`: feature and component states.
 - `design-qa.md` and `docs/design/`: post-change visual evidence.
 - This document and the source audit if implementation evidence changes a
   finding or leaves a documented follow-up.
@@ -59,7 +63,7 @@ The pass is complete when:
 2. The same flows are checked at 960x720, 720x900, and 360x800, including
    keyboard dismissal and focus recovery.
 3. New-task validation and no-result palette behaviour are verified directly.
-4. `node --check apps/axio-desktop/ui/app.js` passes.
+4. `node scripts/check-ui.mjs` passes.
 5. `cargo fmt --all -- --check`, workspace Clippy, and workspace tests pass.
 6. `cargo build --release -p axio-desktop --locked` succeeds.
 7. Updated screenshots and a concise result are recorded in `design-qa.md`.

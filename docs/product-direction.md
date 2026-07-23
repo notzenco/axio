@@ -33,8 +33,8 @@ The default desktop view is task-first:
 1. The left side answers where work lives: tasks, worktrees, and agents.
 2. The center tells the chronological story of a task: messages, tool calls,
    questions, approvals, file changes, and handoffs.
-3. The optional right inspector provides the selected diff, output, files,
-   terminal, or plan without turning those tools into permanent navigation.
+3. The optional right dock provides browser, files, review, output, and plan
+   tools without turning them into permanent top-level navigation.
 4. Focus mode hides navigation and review chrome without moving the task into
    another product.
 

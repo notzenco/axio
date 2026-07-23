@@ -2,9 +2,9 @@
 
 ## The browser preview does not use native behavior
 
-The static preview has no Tauri IPC. Window controls show a notice, and tasks
-mutate JavaScript fallback data. Run `cargo run -p axio-desktop` to verify native
-commands and Rust state.
+The Vite preview has no Tauri IPC. Window controls show a notice, and tasks
+mutate the typed fallback snapshot. Run
+`bun run --cwd apps/axio-desktop dev` to verify native commands and Rust state.
 
 ## The native window will not move
 
@@ -20,7 +20,7 @@ UI calls the allowlisted `window_action` fallback only with `drag`.
 
 Verify the body class combination and viewport. With both closed at wide
 desktop size, `.workspace-shell` must resolve to zero-width side tracks and one
-main track. At 720px and below, the workspace and inspector are mutually
+main track. At 720px and below, the workspace panel and context dock are mutually
 exclusive overlays; opening either must close the other and show one scrim.
 Compare against
 [`../design-qa.md`](../design-qa.md).

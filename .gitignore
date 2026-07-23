@@ -1,5 +1,7 @@
 /.build/
 /target/
+/apps/axio-desktop/dist/
+/apps/axio-desktop/node_modules/
 /.idea/
 /.vscode/
 .DS_Store

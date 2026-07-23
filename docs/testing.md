@@ -10,13 +10,15 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli --locked -- status --json
-node --check apps\axio-desktop\ui\app.js
+node scripts\check-ui.mjs
+bun run --cwd apps\axio-desktop build:vite
 git diff --check
 ```
 
 The GitHub Windows CI currently runs formatting, Clippy, Rust tests, and the CLI
-smoke test. Native release compilation and UI verification are required locally
-until equivalent CI jobs exist.
+smoke test. TypeScript checking, the Vite production build, native release
+compilation, and UI verification are required locally until equivalent CI jobs
+exist.
 
 ## Current Rust coverage
 
@@ -38,7 +40,11 @@ For any desktop change, verify in the native Tauri window:
 
 - non-interactive titlebar regions drag the window;
 - minimize, maximize/restore, and close behave natively;
-- workspace and context sidebars open, close, and return their width;
+- workspace panel and context dock open, close, and return their width;
+- workspace and context resize handles support pointer drag, arrow keys,
+  double-click reset, bounded widths, and persistence across reload;
+- browser, files, review, output, and plan tools switch without losing their
+  local UI state or shrinking the task timeline below its supported minimum;
 - compact overlays are mutually exclusive, contain focus, close with Escape or
   the scrim, and restore focus to their invoker;
 - focus mode enters/exits, clears hidden-panel semantics, and restores the
@@ -47,13 +53,21 @@ For any desktop change, verify in the native Tauri window:
 - agent lifecycle buttons show valid transitions and errors;
 - task creation keeps invalid/recoverable errors in the dialog, while valid
   creation, directions, and review decisions update through Tauri IPC;
-- review entry points open one decision surface with distinct Return with
+- dialogs close from their backdrop and Escape key, while New Task presents an
+  Axio-styled confirmation before discarding changed content from any close path;
+- review entry points open the dock's one decision surface with distinct Return with
   feedback and Approve review actions;
 - command palette, no-results recovery, and keyboard shortcuts work;
-- settings persist appearance without breaking reduced-motion behavior;
-- compact layout has no horizontal overflow or unreachable controls.
+- settings categories and search expose matching controls and a useful
+  no-results state;
+- appearance, workspace, composer, and accessibility preferences apply
+  immediately, persist across reload, and reset together;
+- turning off Send with Enter preserves plain Enter for new lines and submits
+  with Ctrl+Enter;
+- compact layout hides resize handles and has no horizontal overflow or
+  unreachable controls.
 
-Also load the static preview to confirm its fallback path remains usable, but do
+Also load the Vite preview to confirm its fallback path remains usable, but do
 not use the preview as evidence for native IPC.
 
 ## Responsive viewports
@@ -66,8 +80,8 @@ The current design baseline has been inspected at:
 - 360 x 800 browser-only narrow stress test.
 
 New layouts should cover at least one wide, one threshold-adjacent, and one
-narrow viewport. Test combined states such as both sidebars closed and the
-context inspector overlaying a narrow task.
+narrow viewport. Test combined states such as both side panels closed and the
+context dock overlaying a narrow task.
 
 ## Evidence
 
