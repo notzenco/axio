@@ -18,11 +18,16 @@ interface TerminalPaneProps {
   session: TerminalSessionSnapshot;
 }
 
-function writeOrderedEvent(terminal: Terminal, event: TerminalOutputEvent, nextOffset: { current: number }) {
+function writeOrderedEvent(
+  terminal: Terminal,
+  event: TerminalOutputEvent,
+  nextOffset: { current: number },
+  afterWrite?: () => void,
+) {
   const eventEnd = event.offset + event.data.length;
   if (eventEnd <= nextOffset.current) return;
   const start = Math.max(0, nextOffset.current - event.offset);
-  terminal.write(Uint8Array.from(event.data.slice(start)));
+  terminal.write(Uint8Array.from(event.data.slice(start)), afterWrite);
   nextOffset.current = eventEnd;
 }
 
@@ -72,6 +77,15 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     let disposed = false;
     let unlisten = () => {};
     let refreshFrame = 0;
+    let inputTimer = 0;
+    let inputBuffer: number[] = [];
+    const flushInput = () => {
+      inputTimer = 0;
+      if (disposed || inputBuffer.length === 0) return;
+      const data = Uint8Array.from(inputBuffer);
+      inputBuffer = [];
+      void writeTerminalInput(session.id, data)?.catch((error) => onError(String(error)));
+    };
     const refreshAfterPaint = () => {
       cancelAnimationFrame(refreshFrame);
       refreshFrame = requestAnimationFrame(() => {
@@ -80,14 +94,16 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     };
 
     const inputDisposable = terminal.onData((data) => {
-      void writeTerminalInput(session.id, encoder.encode(data))?.catch((error) => onError(String(error)));
+      inputBuffer.push(...encoder.encode(data));
+      if (!inputTimer) inputTimer = window.setTimeout(flushInput, 8);
     });
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
       const height = entry.contentRect.height;
       const columns = Math.max(20, Math.floor(width / 7.25));
       const rows = Math.max(4, Math.floor(height / 15));
-      if (terminal.cols !== columns || terminal.rows !== rows) terminal.resize(columns, rows);
+      if (terminal.cols === columns && terminal.rows === rows) return;
+      terminal.resize(columns, rows);
       void resizeTerminal(session.id, rows, columns)?.catch(() => {});
     });
     observer.observe(container);
@@ -95,7 +111,9 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     void listenTerminalOutput((event) => {
       if (disposed || event.session_id !== session.id) return;
       if (!replayReady) pending.push(event);
-      else writeOrderedEvent(terminal, event, nextOffset);
+      else {
+        writeOrderedEvent(terminal, event, nextOffset, refreshAfterPaint);
+      }
     }).then(async (dispose) => {
       if (disposed) {
         dispose();
@@ -106,12 +124,12 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
         const replay = await terminalOutput(session.id);
         if (replay) {
           if (replay.start_offset > 0) terminal.writeln("\x1b[2m[Earlier output was trimmed]\x1b[0m");
-          terminal.write(Uint8Array.from(replay.data));
+          terminal.write(Uint8Array.from(replay.data), refreshAfterPaint);
           nextOffset.current = replay.end_offset;
         }
         replayReady = true;
         pending.sort((left, right) => left.offset - right.offset);
-        for (const event of pending) writeOrderedEvent(terminal, event, nextOffset);
+        for (const event of pending) writeOrderedEvent(terminal, event, nextOffset, refreshAfterPaint);
         terminal.focus();
         refreshAfterPaint();
       } catch (error) {
@@ -120,6 +138,8 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
     });
 
     return () => {
+      clearTimeout(inputTimer);
+      flushInput();
       disposed = true;
       cancelAnimationFrame(refreshFrame);
       unlisten();
@@ -132,7 +152,7 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
 
   const running = session.status === "running";
   return (
-    <article className="terminal-pane glass-surface">
+    <article className="terminal-pane">
       <header>
         <div>
           <span className={`terminal-state ${session.status}`}></span>

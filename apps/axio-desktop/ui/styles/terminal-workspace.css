@@ -108,6 +108,9 @@
   min-height: 260px;
   flex-direction: column;
   overflow: hidden;
+  contain: layout paint style;
+  isolation: isolate;
+  border: 1px solid var(--line);
   border-radius: 11px;
   background: #05070b;
   box-shadow: 0 12px 30px rgba(0, 0, 0, .2);

@@ -7,6 +7,7 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
     thread,
+    time::Duration,
 };
 
 use axio_protocol::{
@@ -22,6 +23,7 @@ const DEFAULT_ROWS: u16 = 24;
 const DEFAULT_COLUMNS: u16 = 80;
 const MAX_INPUT_BYTES: usize = 64 * 1024;
 const MAX_OUTPUT_BYTES: usize = 512 * 1024;
+const OUTPUT_EVENT_INTERVAL: Duration = Duration::from_millis(12);
 const MAX_TERMINAL_DIMENSION: u16 = 1000;
 const MAX_SESSIONS: usize = 12;
 const MAX_SPAWN_COUNT: u8 = 8;
@@ -31,9 +33,9 @@ const EXIT_EVENT: &str = "terminal-exit";
 struct TerminalSession {
     snapshot: TerminalSessionSnapshot,
     master: Box<dyn MasterPty + Send>,
-    writer: Box<dyn Write + Send>,
+    writer: Arc<Mutex<Box<dyn Write + Send>>>,
     killer: Box<dyn ChildKiller + Send + Sync>,
-    output: OutputBuffer,
+    output: Arc<Mutex<OutputBuffer>>,
 }
 
 #[derive(Default)]
@@ -137,14 +139,21 @@ impl TerminalManager {
     }
 
     pub fn output(&self, session_id: &str) -> Result<TerminalOutputSnapshot, String> {
-        let sessions = self
-            .sessions
+        let output = {
+            let sessions = self
+                .sessions
+                .lock()
+                .map_err(|error| format!("terminal sessions are unavailable: {error}"))?;
+            sessions
+                .get(session_id)
+                .map(|session| Arc::clone(&session.output))
+                .ok_or_else(|| "terminal session was not found".to_owned())?
+        };
+        let snapshot = output
             .lock()
-            .map_err(|error| format!("terminal sessions are unavailable: {error}"))?;
-        sessions
-            .get(session_id)
-            .map(|session| session.output.snapshot())
-            .ok_or_else(|| "terminal session was not found".to_owned())
+            .map_err(|error| format!("terminal output is unavailable: {error}"))?
+            .snapshot();
+        Ok(snapshot)
     }
 
     pub fn write(&self, session_id: &str, data: &[u8]) -> Result<(), String> {
@@ -153,20 +162,25 @@ impl TerminalManager {
                 "terminal input is limited to {MAX_INPUT_BYTES} bytes per write"
             ));
         }
-        let mut sessions = self
-            .sessions
+        let writer = {
+            let sessions = self
+                .sessions
+                .lock()
+                .map_err(|error| format!("terminal sessions are unavailable: {error}"))?;
+            let session = sessions
+                .get(session_id)
+                .ok_or_else(|| "terminal session was not found".to_owned())?;
+            if session.snapshot.status != TerminalSessionStatus::Running {
+                return Err("terminal session is not running".to_owned());
+            }
+            Arc::clone(&session.writer)
+        };
+        let mut writer = writer
             .lock()
-            .map_err(|error| format!("terminal sessions are unavailable: {error}"))?;
-        let session = sessions
-            .get_mut(session_id)
-            .ok_or_else(|| "terminal session was not found".to_owned())?;
-        if session.snapshot.status != TerminalSessionStatus::Running {
-            return Err("terminal session is not running".to_owned());
-        }
-        session
-            .writer
+            .map_err(|error| format!("terminal input is unavailable: {error}"))?;
+        writer
             .write_all(data)
-            .and_then(|()| session.writer.flush())
+            .and_then(|()| writer.flush())
             .map_err(|error| format!("terminal input failed: {error}"))
     }
 
@@ -290,6 +304,8 @@ impl TerminalManager {
             .master
             .take_writer()
             .map_err(|error| format!("terminal input could not be connected: {error}"))?;
+        let writer = Arc::new(Mutex::new(writer));
+        let output = Arc::new(Mutex::new(OutputBuffer::default()));
         let killer = child.clone_killer();
         let id_number = self.next_id.fetch_add(1, Ordering::Relaxed);
         let session_id = format!("terminal-{id_number}");
@@ -315,11 +331,10 @@ impl TerminalManager {
                     master: pair.master,
                     writer,
                     killer,
-                    output: OutputBuffer::default(),
+                    output: Arc::clone(&output),
                 },
             );
 
-        let output_sessions = Arc::clone(&self.sessions);
         let output_app = app.clone();
         let output_session_id = session_id.clone();
         if let Err(error) = thread::Builder::new()
@@ -331,12 +346,10 @@ impl TerminalManager {
                         break;
                     }
                     let data = buffer[..read].to_vec();
-                    let mut offset = 0;
-                    if let Ok(mut sessions) = output_sessions.lock()
-                        && let Some(session) = sessions.get_mut(&output_session_id)
-                    {
-                        offset = session.output.append(&data);
-                    }
+                    let offset = output
+                        .lock()
+                        .map(|mut buffer| buffer.append(&data))
+                        .unwrap_or_default();
                     let _ = output_app.emit(
                         OUTPUT_EVENT,
                         TerminalOutputEvent {
@@ -345,6 +358,7 @@ impl TerminalManager {
                             data,
                         },
                     );
+                    thread::sleep(OUTPUT_EVENT_INTERVAL);
                 }
             })
         {
