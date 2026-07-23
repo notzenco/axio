@@ -1,6 +1,6 @@
 use axio_protocol::{
     ActivityKind, AgentStatus, RepositorySnapshot, ReviewStatus, TaskStatus, WorkspaceActivity,
-    WorkspaceSnapshot, WorkspaceTask,
+    WorkspaceSession, WorkspaceSnapshot, WorkspaceTask,
 };
 
 use crate::{CoreError, lifecycle::can_transition};
@@ -16,6 +16,34 @@ impl Workspace {
     #[must_use]
     pub const fn new(snapshot: WorkspaceSnapshot) -> Self {
         Self { snapshot }
+    }
+
+    /// Restores repository-scoped state and refreshes its live Git metadata.
+    #[must_use]
+    pub fn restore(session: WorkspaceSession, repository: RepositorySnapshot) -> Self {
+        let selected_task = if session
+            .tasks
+            .iter()
+            .any(|task| task.id == session.selected_task)
+        {
+            session.selected_task
+        } else {
+            session
+                .tasks
+                .first()
+                .map_or_else(String::new, |task| task.id.clone())
+        };
+        let mut workspace = Self::new(WorkspaceSnapshot {
+            project: repository.name.clone(),
+            branch: repository.branch.clone(),
+            agents: session.agents,
+            tasks: session.tasks,
+            selected_task,
+            activity: session.activity,
+            repository: None,
+        });
+        workspace.attach_repository(repository);
+        workspace
     }
 
     /// Returns a serializable point-in-time view.

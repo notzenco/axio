@@ -7,10 +7,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use axio_protocol::{RecentWorkspace, RepositorySnapshot};
+use axio_protocol::{RecentWorkspace, RepositorySnapshot, WorkspaceSession, WorkspaceSnapshot};
 use serde::{Deserialize, Serialize};
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
+const FIRST_SUPPORTED_SCHEMA_VERSION: u32 = 1;
 const MAX_RECENT_WORKSPACES: usize = 12;
 
 /// Durable local workspace identity and recents.
@@ -19,6 +20,7 @@ pub struct WorkspaceCatalog {
     pub active_workspace: Option<String>,
     pub recent_workspaces: Vec<RecentWorkspace>,
     pub selected_tasks: BTreeMap<String, String>,
+    pub workspace_sessions: BTreeMap<String, WorkspaceSession>,
 }
 
 impl WorkspaceCatalog {
@@ -51,6 +53,7 @@ impl WorkspaceCatalog {
             self.active_workspace = None;
         }
         self.selected_tasks.remove(path);
+        self.workspace_sessions.remove(path);
     }
 
     /// Remembers the selected task independently for each repository.
@@ -63,6 +66,23 @@ impl WorkspaceCatalog {
     #[must_use]
     pub fn selected_task(&self, path: &str) -> Option<&str> {
         self.selected_tasks.get(path).map(String::as_str)
+    }
+
+    /// Captures all repository-scoped task, agent, and activity state.
+    pub fn capture(&mut self, snapshot: &WorkspaceSnapshot) {
+        let Some(repository) = &snapshot.repository else {
+            return;
+        };
+        self.selected_tasks
+            .insert(repository.root.clone(), snapshot.selected_task.clone());
+        self.workspace_sessions
+            .insert(repository.root.clone(), WorkspaceSession::from(snapshot));
+    }
+
+    /// Returns the complete durable state for one repository, when available.
+    #[must_use]
+    pub fn session(&self, path: &str) -> Option<&WorkspaceSession> {
+        self.workspace_sessions.get(path)
     }
 }
 
@@ -90,7 +110,8 @@ impl WorkspaceStore {
                 Ok(bytes) => {
                     found = true;
                     if let Ok(envelope) = serde_json::from_slice::<PersistedCatalog>(&bytes)
-                        && envelope.schema_version == SCHEMA_VERSION
+                        && (FIRST_SUPPORTED_SCHEMA_VERSION..=SCHEMA_VERSION)
+                            .contains(&envelope.schema_version)
                     {
                         valid.push(envelope);
                     }
@@ -142,7 +163,9 @@ impl WorkspaceStore {
             .into_iter()
             .filter_map(|slot| fs::read(self.slot_path(slot)).ok())
             .filter_map(|bytes| serde_json::from_slice::<PersistedCatalog>(&bytes).ok())
-            .filter(|entry| entry.schema_version == SCHEMA_VERSION)
+            .filter(|entry| {
+                (FIRST_SUPPORTED_SCHEMA_VERSION..=SCHEMA_VERSION).contains(&entry.schema_version)
+            })
             .map(|entry| entry.generation)
             .max()
             .unwrap_or(0)
@@ -169,6 +192,7 @@ impl Serialize for WorkspaceCatalog {
             active_workspace: self.active_workspace.as_deref(),
             recent_workspaces: &self.recent_workspaces,
             selected_tasks: &self.selected_tasks,
+            workspace_sessions: &self.workspace_sessions,
         }
         .serialize(serializer)
     }
@@ -184,6 +208,7 @@ impl<'de> Deserialize<'de> for WorkspaceCatalog {
             active_workspace: data.active_workspace,
             recent_workspaces: data.recent_workspaces,
             selected_tasks: data.selected_tasks,
+            workspace_sessions: data.workspace_sessions,
         })
     }
 }
@@ -193,6 +218,7 @@ struct PersistedCatalogData<'a> {
     active_workspace: Option<&'a str>,
     recent_workspaces: &'a [RecentWorkspace],
     selected_tasks: &'a BTreeMap<String, String>,
+    workspace_sessions: &'a BTreeMap<String, WorkspaceSession>,
 }
 
 #[derive(Deserialize)]
@@ -201,6 +227,8 @@ struct PersistedCatalogDataOwned {
     recent_workspaces: Vec<RecentWorkspace>,
     #[serde(default)]
     selected_tasks: BTreeMap<String, String>,
+    #[serde(default)]
+    workspace_sessions: BTreeMap<String, WorkspaceSession>,
 }
 
 /// A local persistence failure that never implies source-repository damage.
@@ -240,6 +268,8 @@ fn now_unix_ms() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Workspace;
+    use axio_protocol::AgentStatus;
     use std::path::Path;
 
     fn test_directory(name: &str) -> PathBuf {
@@ -275,6 +305,104 @@ mod tests {
     }
 
     #[test]
+    fn round_trips_complete_repository_sessions_independently() {
+        let directory = test_directory("complete-sessions");
+        let store = WorkspaceStore::new(&directory);
+        let first_repository = repository(Path::new("C:/Projects/first"));
+        let second_repository = repository(Path::new("C:/Projects/second"));
+        let mut first_workspace = Workspace::demo();
+        first_workspace.attach_repository(first_repository.clone());
+        first_workspace
+            .create_task("Persist the complete session".to_owned())
+            .expect("task should be created");
+        first_workspace
+            .send_direction(
+                "task-3",
+                "Restore this after restart".to_owned(),
+                "All agents".to_owned(),
+            )
+            .expect("direction should be recorded");
+        first_workspace
+            .transition_agent("codex-01", AgentStatus::Waiting)
+            .expect("agent transition should be recorded");
+
+        let mut second_workspace = Workspace::demo();
+        second_workspace.attach_repository(second_repository.clone());
+        second_workspace
+            .select_task("protocol")
+            .expect("second workspace selection should change");
+
+        let mut catalog = WorkspaceCatalog::default();
+        catalog.open(&first_repository);
+        catalog.capture(&first_workspace.snapshot());
+        catalog.open(&second_repository);
+        catalog.capture(&second_workspace.snapshot());
+        store.save(&catalog).expect("catalog should save");
+
+        let restored = store.load().expect("catalog should load");
+        assert_eq!(
+            restored.session(&first_repository.root),
+            Some(&WorkspaceSession::from(&first_workspace.snapshot()))
+        );
+        assert_eq!(
+            restored.session(&second_repository.root),
+            Some(&WorkspaceSession::from(&second_workspace.snapshot()))
+        );
+        assert_ne!(
+            restored
+                .session(&first_repository.root)
+                .expect("first session should exist")
+                .selected_task,
+            restored
+                .session(&second_repository.root)
+                .expect("second session should exist")
+                .selected_task
+        );
+
+        fs::remove_dir_all(directory).expect("test directory should be removed");
+    }
+
+    #[test]
+    fn migrates_schema_one_catalogs_and_writes_schema_two() {
+        let directory = test_directory("schema-migration");
+        let store = WorkspaceStore::new(&directory);
+        fs::create_dir_all(&directory).expect("state directory should exist");
+        let legacy = serde_json::json!({
+            "schema_version": 1,
+            "generation": 1,
+            "catalog": {
+                "active_workspace": "C:/Projects/legacy",
+                "recent_workspaces": [],
+                "selected_tasks": {
+                    "C:/Projects/legacy": "protocol"
+                }
+            }
+        });
+        fs::write(
+            store.slot_path("b"),
+            serde_json::to_vec_pretty(&legacy).expect("legacy catalog should serialize"),
+        )
+        .expect("legacy catalog should be writable");
+
+        let migrated = store.load().expect("schema one should migrate");
+        assert_eq!(
+            migrated.selected_task("C:/Projects/legacy"),
+            Some("protocol")
+        );
+        assert!(migrated.workspace_sessions.is_empty());
+
+        store.save(&migrated).expect("migrated catalog should save");
+        let saved: serde_json::Value = serde_json::from_slice(
+            &fs::read(store.slot_path("a")).expect("schema two slot should exist"),
+        )
+        .expect("schema two slot should be valid JSON");
+        assert_eq!(saved["schema_version"], SCHEMA_VERSION);
+        assert!(saved["catalog"]["workspace_sessions"].is_object());
+
+        fs::remove_dir_all(directory).expect("test directory should be removed");
+    }
+
+    #[test]
     fn falls_back_to_previous_slot_when_newest_is_corrupt() {
         let directory = test_directory("workspace-recovery");
         let store = WorkspaceStore::new(&directory);
@@ -301,11 +429,16 @@ mod tests {
         fs::create_dir_all(&source).expect("source directory should exist");
         fs::write(source.join("keep.txt"), "keep").expect("source file should exist");
         let mut catalog = WorkspaceCatalog::default();
-        catalog.open(&repository(&source));
+        let repository = repository(&source);
+        let mut workspace = Workspace::demo();
+        workspace.attach_repository(repository.clone());
+        catalog.open(&repository);
+        catalog.capture(&workspace.snapshot());
 
         catalog.remove_recent(&source.to_string_lossy());
 
         assert!(source.join("keep.txt").exists());
+        assert!(catalog.session(&source.to_string_lossy()).is_none());
         fs::remove_dir_all(source).expect("test directory should be removed");
     }
 }

@@ -21,6 +21,10 @@ repositories and is not continued by this project.
   density, responsive behavior, and accessibility.
 - Screenshot-backed desktop UI audit, implementation contract, responsive
   evidence, and final design QA record.
+- Native repository folder selection, recoverable recent workspaces, and a
+  useful closed-workspace state.
+- Schema-v2 per-repository persistence for tasks, agents, activity, selection,
+  and review state, including schema-v1 migration and corruption fallback.
 
 ### Changed
 
@@ -41,8 +45,9 @@ repositories and is not continued by this project.
 
 ### Known limitations
 
-- Workspace data is deterministic, process-local demo state.
-- Agent execution, PTY terminals, Git worktrees/diffs, persistence, installers,
+- Persisted workspace content is deterministic demo state until a real agent
+  connector is implemented.
+- Agent execution, PTY terminals, Git worktrees/complete diffs, installers,
   signing, and updates are not implemented.
 - The Linux Tauri dependency graph carries the documented moderate `glib`
   advisory pending a compatible upstream dependency route.

@@ -22,8 +22,8 @@ letting further visual polish disguise or delay the runtime outcomes below.
 Scope:
 
 - Repository/folder picker and recent workspaces.
-- Persisted workspace identity, selected task, layout, and safe appearance
-  preferences.
+- Persisted workspace identity, tasks, agents, activity, review state,
+  selection, layout, and safe appearance preferences.
 - Versioned schema and forward migrations.
 - Atomic writes or transactional storage, corruption detection, and recovery.
 - Clear ownership of Axio data versus source-repository data.
@@ -34,6 +34,7 @@ Acceptance:
 - Paths with spaces and non-ASCII characters work on supported platforms.
 - Interrupted writes do not destroy the last valid state.
 - Migration tests cover every persisted schema change.
+- Task and activity mutations restore independently for each repository.
 - Removing a workspace from Axio never deletes the source repository.
 
 ## Outcome: real connector lifecycle

@@ -14,8 +14,8 @@ model, validated in-memory transitions, explicit local Git repository opening,
 a recoverable recent-workspace catalog, and a small CLI. The current build
 combines a real repository boundary with deterministic task and agent demo
 data. It does not yet launch or supervise real coding agents, create Git
-worktrees, stream terminals, persist complete task state, or render complete
-live diffs.
+worktrees, stream terminals, or render complete live diffs. Repository-scoped
+task, agent, activity, selection, and review state now survives restart.
 
 There is one desktop product. The CLI remains a separate automation consumer of
 the same Rust core. The paused legacy switcher is not a second current app.
@@ -25,9 +25,9 @@ the same Rust core. The paused legacy switcher is not a second current app.
 | Area | Current behavior | Evidence |
 |---|---|---|
 | Protocol | Serializable agent, task, activity, review, and workspace snapshot types. | `crates/axio-protocol`; Rust compilation and tests. |
-| Core state | Validated agent transitions, task selection/creation, direction events, review decisions, and a closed-workspace invariant. | `crates/axio-core`; seven focused unit tests. |
+| Core state | Validated agent transitions, task selection/creation, direction events, review decisions, and closed/restored workspace invariants. | `crates/axio-core`; eight focused unit tests. |
 | Repository inspection | Discovers the Git checkout containing the process directory or executable, then reads its root, branch, tracked/untracked file inventory, working-tree statuses, and text line statistics without invoking a shell. | `crates/axio-core/src/repository.rs`; parser tests and live CLI verification. |
-| Workspace lifecycle | Opens a Git repository with the native OS folder chooser or an explicit local path, keeps bounded recents, remembers the selected demo task per repository, restores after restart, and closes into a useful empty state without changing source files. A versioned two-slot local store retains the last valid generation after an interrupted or corrupt write. | `crates/axio-core/src/persistence.rs`; Rust recovery/path/removal/closed-state tests and native Windows restart verification. |
+| Workspace lifecycle | Opens a Git repository with the native OS folder chooser or an explicit local path, keeps bounded recents, restores complete task/agent/activity state independently per repository, and closes into a useful empty state without changing source files. A schema-v2 two-slot local store migrates schema v1 and retains the last valid generation after an interrupted or corrupt write. | `crates/axio-core/src/persistence.rs`; migration, recovery, path, removal, isolation, and desktop-runtime restart tests plus native Windows verification. |
 | CLI | `status`, `status --json`, and `version` over the shared snapshot, enriched with live repository data when discovery succeeds. | CLI smoke test in CI and local repository verification. |
 | Native shell | Tauri window, drag/minimize/maximize/close, narrow command bridge, and restrictive CSP. | Native release build and manual Windows run. |
 | Task workspace | Task/worktree selection, chronological activity, explicit attention state, inline task validation, agent controls, directions, and review decisions. | Browser and native interaction verification. |
@@ -45,10 +45,10 @@ not implemented:
 
 | Surface | What happens now | Missing real integration |
 |---|---|---|
-| Agent pause/resume | Changes `AgentStatus` in memory. | Process signals, connector acknowledgement, and recovery. |
-| Create task | Adds a task and generated worktree name in memory. | Repository selection and `git worktree` creation. |
-| Composer | Appends a direction event to the selected timeline. | Routing to Codex, Claude Code, OpenCode, Pi, or custom connectors. |
-| Review approval | Changes review/task status and appends an event. | Reading a real diff, staging, committing, merging, or returning feedback to an agent. |
+| Agent pause/resume | Changes and persists `AgentStatus`. | Process signals, connector acknowledgement, and recovery. |
+| Create task | Adds and persists a task and generated worktree name. | Repository selection and `git worktree` creation. |
+| Composer | Persists a direction event in the selected timeline. | Routing to Codex, Claude Code, OpenCode, Pi, or custom connectors. |
+| Review approval | Persists review/task status and an event. | Reading a real diff, staging, committing, merging, or returning feedback to an agent. |
 | Diff panel | Native builds show live changed paths, statuses, and available line totals; browser-only preview data remains representative. | Unified patches, hunk navigation, staged/unstaged grouping, and binary detail. |
 | Browser tool | Provides a working address/refresh shell and preview boundary. | Native embedded webview lifecycle and dev-server discovery. |
 | File explorer | Native builds show a bounded, searchable tree of tracked and untracked repository paths, safe read-only text previews up to 256 KiB, binary identification, and manual refresh; browser-only runs identify their preview data. | Filesystem watches, editing, and explicit worktree scoping. |
@@ -59,13 +59,13 @@ not implemented:
 
 The browser preview intentionally uses a typed fallback snapshot. The Tauri
 build initializes deterministic task and agent state, enriches it with the
-containing Git repository when available, and keeps task mutations only for the
-process life.
+containing Git repository when available, and persists repository-scoped
+mutations in Axio's local application-data directory.
 
 ## Not implemented
 
-- Complete task/event persistence, forward migrations beyond the initial
-  schema, and full session/crash restoration.
+- Future schema migrations beyond v1-to-v2 and retention/export controls for
+  persisted session history.
 - Agent connector descriptors, authentication handoff, or process supervision.
 - PTY terminal sessions, structured tool events, logs, cancellation, or timeouts.
 - Git worktrees, complete diffs, staging, merge, or conflict flows.
@@ -79,7 +79,10 @@ process life.
 
 - The demo state can make the interface appear more complete than the runtime;
   all product communication must preserve the distinction above.
-- Workspace state is protected by one process-local mutex and is lost on exit.
+- Workspace writes are serialized by one process-local mutex; multi-process
+  coordination is not implemented.
+- Persisted demo directions and activity are local plaintext application data;
+  credential redaction and retention controls must precede real connectors.
 - The UI now uses TypeScript, React, and Vite with feature-owned components,
   hooks, services, fixtures, and styles. Automated interaction coverage still
   needs to move from the manual release gate into CI as behavior grows.
@@ -94,13 +97,12 @@ process life.
 The next work is outcome-driven rather than tied to invented version numbers or
 dates. The dependency order is:
 
-1. Complete the durable workspace outcome with complete task-state restoration
-   and migration coverage for each future persisted schema version.
-2. Define and prove one real external-agent connector lifecycle.
-3. Turn process, terminal, tool, and approval events into the task narrative.
-4. Connect task boundaries to real Git worktrees and review operations.
-5. Prove recovery, diagnostics, security boundaries, and cross-platform builds.
-6. Package a signed, supportable desktop release only after the daily workflow
+1. Define and prove one real external-agent connector lifecycle.
+2. Turn process, terminal, tool, and approval events into the task narrative.
+3. Connect task boundaries to real Git worktrees and review operations.
+4. Maintain migration coverage while proving recovery, diagnostics, security
+   boundaries, and cross-platform builds.
+5. Package a signed, supportable desktop release only after the daily workflow
    is dependable.
 
 Detailed scope and acceptance criteria are in

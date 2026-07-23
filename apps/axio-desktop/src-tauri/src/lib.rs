@@ -60,13 +60,12 @@ fn open_workspace(
     let repository = open_repository(&path).map_err(|error| error.to_string())?;
     let mut runtime = lock_runtime(&state)?;
     let mut catalog = runtime.catalog.clone();
+    catalog.capture(&runtime.workspace.snapshot());
     catalog.open(&repository);
+    let workspace = workspace_for_repository(&catalog, repository);
+    catalog.capture(&workspace.snapshot());
     runtime.commit_catalog(catalog)?;
-    if runtime.workspace.snapshot().tasks.is_empty() {
-        runtime.workspace = Workspace::demo();
-    }
-    runtime.workspace.attach_repository(repository.clone());
-    runtime.restore_selected_task(&repository.root);
+    runtime.workspace = workspace;
     Ok(runtime.lifecycle_snapshot())
 }
 
@@ -74,9 +73,10 @@ fn open_workspace(
 fn close_workspace(state: State<'_, AppState>) -> Result<WorkspaceLifecycleSnapshot, String> {
     let mut runtime = lock_runtime(&state)?;
     let mut catalog = runtime.catalog.clone();
+    catalog.capture(&runtime.workspace.snapshot());
     catalog.close();
     runtime.commit_catalog(catalog)?;
-    runtime.workspace.close_repository();
+    runtime.workspace = Workspace::empty();
     Ok(runtime.lifecycle_snapshot())
 }
 
@@ -88,10 +88,11 @@ fn remove_recent_workspace(
     let mut runtime = lock_runtime(&state)?;
     let was_active = runtime.catalog.active_workspace.as_deref() == Some(path.as_str());
     let mut catalog = runtime.catalog.clone();
+    catalog.capture(&runtime.workspace.snapshot());
     catalog.remove_recent(&path);
     runtime.commit_catalog(catalog)?;
     if was_active {
-        runtime.workspace.close_repository();
+        runtime.workspace = Workspace::empty();
     }
     Ok(runtime.lifecycle_snapshot())
 }
@@ -105,7 +106,12 @@ fn refresh_repository(state: State<'_, AppState>) -> Result<WorkspaceSnapshot, S
         .clone()
         .ok_or_else(|| "no active workspace is available".to_owned())?;
     let repository = open_repository(path).map_err(|error| error.to_string())?;
-    runtime.workspace.attach_repository(repository);
+    let mut workspace = runtime.workspace.clone();
+    workspace.attach_repository(repository);
+    let mut catalog = runtime.catalog.clone();
+    catalog.capture(&workspace.snapshot());
+    runtime.commit_catalog(catalog)?;
+    runtime.workspace = workspace;
     Ok(runtime.workspace.snapshot())
 }
 
@@ -129,26 +135,12 @@ fn set_agent_status(
     next: AgentStatus,
     state: State<'_, AppState>,
 ) -> Result<WorkspaceSnapshot, String> {
-    let mut runtime = lock_runtime(&state)?;
-    runtime
-        .workspace
-        .transition_agent(&id, next)
-        .map_err(|error| error.to_string())?;
-    Ok(runtime.workspace.snapshot())
+    mutate_workspace(state, |workspace| workspace.transition_agent(&id, next))
 }
 
 #[tauri::command]
 fn select_task(id: String, state: State<'_, AppState>) -> Result<WorkspaceSnapshot, String> {
-    let mut runtime = lock_runtime(&state)?;
-    let mut workspace = runtime.workspace.clone();
-    workspace
-        .select_task(&id)
-        .map_err(|error| error.to_string())?;
-    let mut catalog = runtime.catalog.clone();
-    catalog.select_task(&id);
-    runtime.commit_catalog(catalog)?;
-    runtime.workspace = workspace;
-    Ok(runtime.workspace.snapshot())
+    mutate_workspace(state, |workspace| workspace.select_task(&id))
 }
 
 #[tauri::command]
@@ -182,8 +174,7 @@ fn mutate_workspace(
     operation: impl FnOnce(&mut Workspace) -> Result<(), axio_core::CoreError>,
 ) -> Result<WorkspaceSnapshot, String> {
     let mut runtime = lock_runtime(&state)?;
-    operation(&mut runtime.workspace).map_err(|error| error.to_string())?;
-    Ok(runtime.workspace.snapshot())
+    runtime.mutate(operation)
 }
 
 #[tauri::command]
@@ -258,13 +249,6 @@ impl WorkspaceRuntime {
         }
     }
 
-    fn restore_selected_task(&mut self, path: &str) {
-        let Some(task_id) = self.catalog.selected_task(path).map(str::to_owned) else {
-            return;
-        };
-        let _ = self.workspace.select_task(&task_id);
-    }
-
     fn commit_catalog(&mut self, catalog: WorkspaceCatalog) -> Result<(), String> {
         self.store.save(&catalog).map_err(|error| {
             self.persistence_warning = Some(error.to_string());
@@ -273,6 +257,19 @@ impl WorkspaceRuntime {
         self.catalog = catalog;
         self.persistence_warning = None;
         Ok(())
+    }
+
+    fn mutate(
+        &mut self,
+        operation: impl FnOnce(&mut Workspace) -> Result<(), axio_core::CoreError>,
+    ) -> Result<WorkspaceSnapshot, String> {
+        let mut workspace = self.workspace.clone();
+        operation(&mut workspace).map_err(|error| error.to_string())?;
+        let mut catalog = self.catalog.clone();
+        catalog.capture(&workspace.snapshot());
+        self.commit_catalog(catalog)?;
+        self.workspace = workspace;
+        Ok(self.workspace.snapshot())
     }
 }
 
@@ -286,11 +283,7 @@ fn initialize_runtime(state_directory: PathBuf) -> WorkspaceRuntime {
     if let Some(path) = catalog.active_workspace.clone() {
         match open_repository(&path) {
             Ok(repository) => {
-                workspace = Workspace::demo();
-                workspace.attach_repository(repository);
-                if let Some(task_id) = catalog.selected_task(&path) {
-                    let _ = workspace.select_task(task_id);
-                }
+                workspace = workspace_for_repository(&catalog, repository);
             }
             Err(error) => {
                 warning = Some(format!(
@@ -308,5 +301,100 @@ fn initialize_runtime(state_directory: PathBuf) -> WorkspaceRuntime {
         catalog,
         store,
         persistence_warning: warning,
+    }
+}
+
+fn workspace_for_repository(
+    catalog: &WorkspaceCatalog,
+    repository: axio_protocol::RepositorySnapshot,
+) -> Workspace {
+    if let Some(session) = catalog.session(&repository.root) {
+        return Workspace::restore(session.clone(), repository);
+    }
+    let path = repository.root.clone();
+    let mut workspace = Workspace::demo();
+    workspace.attach_repository(repository);
+    if let Some(task_id) = catalog.selected_task(&path) {
+        let _ = workspace.select_task(task_id);
+    }
+    workspace
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    fn test_directory() -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be available")
+            .as_nanos();
+        std::env::temp_dir().join(format!("axio-runtime-restart-{unique}"))
+    }
+
+    #[test]
+    fn complete_workspace_mutations_survive_runtime_restart() {
+        let directory = test_directory();
+        let repository = open_repository(env!("CARGO_MANIFEST_DIR"))
+            .expect("test checkout should be Git-backed");
+        let store = WorkspaceStore::new(&directory);
+        let mut workspace = Workspace::demo();
+        workspace.attach_repository(repository.clone());
+        let mut catalog = WorkspaceCatalog::default();
+        catalog.open(&repository);
+        catalog.capture(&workspace.snapshot());
+        store.save(&catalog).expect("initial state should save");
+        let mut runtime = WorkspaceRuntime {
+            workspace,
+            catalog,
+            store,
+            persistence_warning: None,
+        };
+
+        runtime
+            .mutate(|workspace| workspace.create_task("Durable task".to_owned()))
+            .expect("task creation should persist");
+        runtime
+            .mutate(|workspace| {
+                workspace.send_direction(
+                    "task-3",
+                    "Persist this direction".to_owned(),
+                    "Codex".to_owned(),
+                )
+            })
+            .expect("direction should persist");
+        runtime
+            .mutate(|workspace| workspace.review_task("task-3", true))
+            .expect("review should persist");
+        runtime
+            .mutate(|workspace| workspace.transition_agent("codex-01", AgentStatus::Waiting))
+            .expect("agent status should persist");
+        runtime
+            .mutate(|workspace| workspace.select_task("protocol"))
+            .expect("selection should persist");
+        drop(runtime);
+
+        let restored = initialize_runtime(directory.clone()).workspace.snapshot();
+        assert_eq!(restored.selected_task, "protocol");
+        assert_eq!(restored.tasks.len(), 3);
+        assert_eq!(
+            restored
+                .tasks
+                .iter()
+                .find(|task| task.id == "task-3")
+                .expect("created task should restore")
+                .review,
+            axio_protocol::ReviewStatus::Approved
+        );
+        assert_eq!(restored.agents[0].status, AgentStatus::Waiting);
+        assert!(restored.activity.iter().any(|activity| {
+            activity.task_id == "task-3" && activity.summary == "Persist this direction"
+        }));
+
+        fs::remove_dir_all(directory).expect("test state should be removed");
     }
 }
