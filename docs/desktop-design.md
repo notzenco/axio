@@ -9,6 +9,8 @@ switching, the command palette, and focus mode.
 - **Portfolio zoom:** projects, tasks, worktrees, agent health, and usage.
 - **Task zoom:** one chronological narrative containing every agent event,
   question, approval, command, and file change.
+- **Terminal zoom:** a task-scoped grid of live Codex, Claude Code, OpenCode,
+  and shell PTYs in the same application window.
 - **Focus zoom:** the same task canvas with navigation and context tools hidden.
 - **Context dock:** browser, files, changed-file review, completed command
   output, and a read-only plan for the selected task.
@@ -30,6 +32,9 @@ task. Approval requests appear inline at the point that produced them.
 - One centered toolbar above the task exposes Focus and every context tool even
   while the dock is closed. The dock repeats icon navigation at its top so
   overlayed tools remain switchable.
+- Activity, Canvas, and Terminal are peer task modes. Terminal uses the central
+  workspace for an adaptive pane grid; the smaller Output context tool remains
+  a completed-command view rather than an interactive PTY.
 - Workspace settings can make the task toolbar icon-only, hide its Review count,
   and choose the dock's initial tool without removing accessible names or
   attention state.
@@ -78,8 +83,8 @@ Implementation screenshots and the responsive comparison record live in
 [`../design-qa.md`](../design-qa.md).
 The complete preference contract is in [`settings.md`](settings.md).
 
-Controls that currently mutate demo state rather than real agent, terminal, or
-Git resources are identified in
+Controls that currently mutate demo state rather than connector or Git
+resources are identified in
 [`status-and-direction.md`](status-and-direction.md).
 
 The audited hierarchy, attention, composer, context, responsive, and keyboard

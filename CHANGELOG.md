@@ -25,6 +25,9 @@ repositories and is not continued by this project.
   useful closed-workspace state.
 - Schema-v2 per-repository persistence for tasks, agents, activity, selection,
   and review state, including schema-v1 migration and corruption fallback.
+- PTY-backed Terminal work mode with bounded multi-pane Codex, Claude Code,
+  OpenCode, and shell sessions, streamed output, keyboard input, resize,
+  process exit state, and explicit stop/close controls.
 
 ### Changed
 
@@ -47,7 +50,7 @@ repositories and is not continued by this project.
 
 - Persisted workspace content is deterministic demo state until a real agent
   connector is implemented.
-- Agent execution, PTY terminals, Git worktrees/complete diffs, installers,
+- Structured agent connectors, Git worktrees/complete diffs, installers,
   signing, and updates are not implemented.
 - The Linux Tauri dependency graph carries the documented moderate `glib`
   advisory pending a compatible upstream dependency route.

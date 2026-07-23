@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fluentui/react-icons": "^2.0.333",
+    "@xterm/xterm": "^6.0.0",
     "react": "^19",
     "react-dom": "^19"
   },

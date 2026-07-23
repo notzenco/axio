@@ -36,6 +36,64 @@ pub struct AgentSession {
     pub worktree: Option<String>,
 }
 
+/// A supported interactive process that can run in Axio's terminal mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TerminalProvider {
+    Shell,
+    Codex,
+    ClaudeCode,
+    OpenCode,
+}
+
+/// The transient lifecycle of one PTY-backed terminal pane.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TerminalSessionStatus {
+    Running,
+    Stopping,
+    Exited,
+    Failed,
+}
+
+/// Public metadata for a live terminal without its output or credentials.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TerminalSessionSnapshot {
+    pub id: String,
+    pub provider: TerminalProvider,
+    pub ordinal: u32,
+    pub status: TerminalSessionStatus,
+    pub task_id: String,
+    pub repository_root: String,
+    pub cwd: String,
+    pub pid: Option<u32>,
+    pub exit_code: Option<u32>,
+}
+
+/// A bounded binary chunk read from one terminal PTY.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TerminalOutputEvent {
+    pub session_id: String,
+    pub offset: u64,
+    pub data: Vec<u8>,
+}
+
+/// A replayable bounded slice of one terminal's output stream.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TerminalOutputSnapshot {
+    pub data: Vec<u8>,
+    pub start_offset: u64,
+    pub end_offset: u64,
+}
+
+/// The final process result for a terminal pane.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TerminalExitEvent {
+    pub session_id: String,
+    pub status: TerminalSessionStatus,
+    pub exit_code: Option<u32>,
+}
+
 /// The lifecycle state of a task in the desktop workspace.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

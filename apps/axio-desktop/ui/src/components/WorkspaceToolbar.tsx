@@ -1,4 +1,4 @@
-import { AppsListDetail20Regular, Grid20Regular } from "@fluentui/react-icons";
+import { AppsListDetail20Regular, Grid20Regular, WindowConsole20Regular } from "@fluentui/react-icons";
 import type { ContextPanel, WorkMode } from "../types";
 import { workspaceTools } from "./context/contextTools";
 
@@ -13,6 +13,7 @@ interface WorkspaceToolbarProps {
 const workModes = [
   { id: "activity", icon: AppsListDetail20Regular, label: "Activity" },
   { id: "canvas", icon: Grid20Regular, label: "Canvas" },
+  { id: "terminal", icon: WindowConsole20Regular, label: "Terminal" },
 ] satisfies { id: WorkMode; icon: typeof Grid20Regular; label: string }[];
 
 export function WorkspaceToolbar({ contextOpen, mode, onModeChange, onToolSelect, panel }: WorkspaceToolbarProps) {

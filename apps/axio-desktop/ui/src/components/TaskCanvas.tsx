@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { AppSettings } from "../hooks/useSettings";
 import type { ContextPanel, WorkMode, WorkspaceSnapshot, WorkspaceTask } from "../types";
 import { CanvasOverview } from "./workflow/CanvasOverview";
@@ -6,6 +6,10 @@ import { RecentActivity } from "./workflow/RecentActivity";
 import { TaskComposer } from "./TaskComposer";
 import { Timeline } from "./Timeline";
 import { WorkspaceToolbar } from "./WorkspaceToolbar";
+
+const TerminalWorkspace = lazy(() => import("./terminal/TerminalWorkspace").then((module) => ({
+  default: module.TerminalWorkspace,
+})));
 
 interface TaskCanvasProps {
   onOpenOutput: () => void;
@@ -18,9 +22,10 @@ interface TaskCanvasProps {
   showReviewBadge: boolean;
   snapshot: WorkspaceSnapshot;
   task: WorkspaceTask;
+  notify: (message: string) => void;
 }
 
-export function TaskCanvas({ contextOpen, contextPanel, onOpenOutput, onOpenReview, onSend, onToolSelect, preferences, showReviewBadge, snapshot, task }: TaskCanvasProps) {
+export function TaskCanvas({ contextOpen, contextPanel, notify, onOpenOutput, onOpenReview, onSend, onToolSelect, preferences, showReviewBadge, snapshot, task }: TaskCanvasProps) {
   const [mode, setMode] = useState<WorkMode>("canvas");
 
   return (
@@ -36,14 +41,14 @@ export function TaskCanvas({ contextOpen, contextPanel, onOpenOutput, onOpenRevi
             <CanvasOverview snapshot={snapshot} task={task} onReview={onOpenReview} />
             <RecentActivity snapshot={snapshot} task={task} onReview={onOpenReview} onViewAll={() => setMode("activity")} />
           </>
-        ) : (
+        ) : mode === "activity" ? (
           <section className="activity-workspace" aria-labelledby="activity-heading">
             <div className="activity-title"><div><span className="status-pulse"></span><h1 id="activity-heading">{task.title}</h1></div><p>Every decision, tool call, and review checkpoint in one durable record.</p></div>
             <Timeline snapshot={snapshot} task={task} onReview={onOpenReview} />
           </section>
-        )}
+        ) : <Suspense fallback={<div className="terminal-loading">Loading terminal mode…</div>}><TerminalWorkspace notify={notify} snapshot={snapshot} task={task} /></Suspense>}
       </div>
-      <TaskComposer snapshot={snapshot} task={task} preferences={preferences} onOpenTerminal={onOpenOutput} onSend={onSend} />
+      {mode !== "terminal" && <TaskComposer snapshot={snapshot} task={task} preferences={preferences} onOpenTerminal={onOpenOutput} onSend={onSend} />}
     </main>
   );
 }
