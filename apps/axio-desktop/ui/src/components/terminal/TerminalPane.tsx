@@ -10,6 +10,7 @@ import {
 import { subscribeTerminalOutput } from "../../services/terminal-events";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
 import { terminalProviderLabel } from "../../data/terminal-providers";
+import { TerminalResizeScheduler } from "../../data/terminal-resize";
 
 interface TerminalPaneProps {
   onClose: (sessionId: string) => void;
@@ -89,14 +90,21 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
       inputBuffer.push(...encoder.encode(data));
       if (!inputTimer) inputTimer = window.setTimeout(flushInput, 8);
     });
+    const resizeScheduler = new TerminalResizeScheduler(({ rows, columns }) => {
+      if (!disposed) void resizeTerminal(session.id, rows, columns)?.catch(() => {});
+    });
+    let observedRows = 0;
+    let observedColumns = 0;
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
       const height = entry.contentRect.height;
       const columns = Math.max(20, Math.floor(width / 7.25));
       const rows = Math.max(4, Math.floor(height / 15));
-      if (terminal.cols === columns && terminal.rows === rows) return;
-      terminal.resize(columns, rows);
-      void resizeTerminal(session.id, rows, columns)?.catch(() => {});
+      if (observedColumns === columns && observedRows === rows) return;
+      observedColumns = columns;
+      observedRows = rows;
+      if (terminal.cols !== columns || terminal.rows !== rows) terminal.resize(columns, rows);
+      resizeScheduler.schedule({ rows, columns });
     });
     observer.observe(container);
 
@@ -134,6 +142,7 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
       disposed = true;
       unlisten();
       observer.disconnect();
+      resizeScheduler.dispose();
       container.removeEventListener("pointerdown", focusTerminal);
       inputDisposable.dispose();
       terminal.dispose();
