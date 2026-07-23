@@ -3,11 +3,13 @@
 mod demo;
 mod error;
 mod lifecycle;
+mod persistence;
 mod repository;
 mod workspace;
 
 pub use error::CoreError;
-pub use repository::{RepositoryError, discover_repository, read_repository_file};
+pub use persistence::{PersistenceError, WorkspaceCatalog, WorkspaceStore};
+pub use repository::{RepositoryError, discover_repository, open_repository, read_repository_file};
 pub use workspace::Workspace;
 
 #[cfg(test)]

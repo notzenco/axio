@@ -64,6 +64,13 @@ pub fn discover_repository() -> Result<RepositorySnapshot, RepositoryError> {
     inspect_repository(&root)
 }
 
+/// Opens the Git repository containing an explicitly selected folder.
+pub fn open_repository(path: impl AsRef<Path>) -> Result<RepositorySnapshot, RepositoryError> {
+    let path = path.as_ref();
+    let root = repository_root(path)?;
+    inspect_repository(&root)
+}
+
 /// Reads a bounded text preview without allowing paths to escape the repository.
 pub fn read_repository_file(
     repository: &RepositorySnapshot,

@@ -95,6 +95,8 @@ name = "axio-core"
 version = "0.0.1"
 dependencies = [
  "axio-protocol",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

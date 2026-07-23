@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CommandPalette } from "./components/CommandPalette";
 import { ContextDock } from "./components/ContextDock";
 import { NewTaskDialog } from "./components/NewTaskDialog";
+import { OpenWorkspaceDialog } from "./components/OpenWorkspaceDialog";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { Sidebar } from "./components/Sidebar";
 import { Statusbar } from "./components/Statusbar";
@@ -13,18 +14,23 @@ import { useSettings } from "./hooks/useSettings";
 import type { UpdateSettings } from "./components/SettingsDialog";
 import {
   createTask,
+  closeWorkspace,
+  openWorkspace,
   refreshRepository,
+  removeRecentWorkspace,
   reviewTask,
   selectTask,
   sendDirection,
   setAgentStatus,
-  workspaceSnapshot,
+  workspaceLifecycle,
 } from "./services/tauri";
-import type { AgentSession, AgentStatus, WorkspaceSnapshot } from "./types";
+import type { AgentSession, AgentStatus, RecentWorkspace, WorkspaceSnapshot } from "./types";
 
 export function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(copyFallbackSnapshot);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [recentWorkspaces, setRecentWorkspaces] = useState<RecentWorkspace[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState("");
@@ -40,12 +46,40 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    workspaceSnapshot()?.then(setSnapshot).catch((error) => {
+    workspaceLifecycle()?.then((lifecycle) => {
+      setSnapshot(lifecycle.workspace);
+      setRecentWorkspaces(lifecycle.recent_workspaces);
+      if (lifecycle.persistence_warning) notify(lifecycle.persistence_warning);
+    }).catch((error) => {
       setSnapshot(copyFallbackSnapshot());
       notify(`Using local preview data: ${error}`);
     });
     return () => window.clearTimeout(toastTimer.current);
   }, [notify]);
+
+  const applyWorkspaceLifecycle = (lifecycle: Awaited<ReturnType<typeof openWorkspace>>) => {
+    if (!lifecycle) return;
+    setSnapshot(lifecycle.workspace);
+    setRecentWorkspaces(lifecycle.recent_workspaces);
+    if (lifecycle.persistence_warning) notify(lifecycle.persistence_warning);
+  };
+
+  const openRepositoryWorkspace = async (path: string) => {
+    const lifecycle = await openWorkspace(path);
+    applyWorkspaceLifecycle(lifecycle);
+    if (lifecycle) notify(`Opened ${lifecycle.workspace.project}`);
+  };
+
+  const closeRepositoryWorkspace = async () => {
+    applyWorkspaceLifecycle(await closeWorkspace());
+    setWorkspaceOpen(false);
+    notify("Workspace closed; repository files were not changed");
+  };
+
+  const forgetRecentWorkspace = async (path: string) => {
+    applyWorkspaceLifecycle(await removeRecentWorkspace(path));
+    notify("Removed from recent workspaces");
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -197,7 +231,7 @@ export function App() {
       <div className="app-shell">
         <Titlebar layout={layout} notify={notify} onOpenPalette={() => setPaletteOpen(true)} onOpenSettings={() => setSettingsOpen(true)} project={snapshot.project} />
         <div className="workspace-shell">
-          <Sidebar snapshot={snapshot} panel={layout.sidebarPanel} width={layout.workspaceWidth} onResize={layout.setWorkspaceWidth} onPanelChange={layout.showSidebarPanel} onNewTask={() => setNewTaskOpen(true)} onNotify={notify} onSelectTask={chooseTask} onTransitionAgent={transitionAgent} />
+          <Sidebar snapshot={snapshot} panel={layout.sidebarPanel} width={layout.workspaceWidth} onResize={layout.setWorkspaceWidth} onPanelChange={layout.showSidebarPanel} onNewTask={() => setNewTaskOpen(true)} onOpenWorkspace={() => setWorkspaceOpen(true)} onNotify={notify} onSelectTask={chooseTask} onTransitionAgent={transitionAgent} />
           <button id="overlay-scrim" className="overlay-scrim" type="button" aria-label="Close open panel" tabIndex={-1} onClick={layout.closeOverlay}></button>
           <TaskCanvas contextOpen={layout.inspectorOpen} contextPanel={layout.inspectorPanel} preferences={settings.composer} showReviewBadge={settings.workspace.showReviewBadge} snapshot={snapshot} task={selectedTask} onToolSelect={chooseContextTool} onOpenOutput={() => layout.showInspectorPanel("terminal")} onOpenReview={() => layout.showInspectorPanel("diff")} onSend={addDirection} />
           <ContextDock snapshot={snapshot} task={selectedTask} panel={layout.inspectorPanel} width={layout.contextWidth} onResize={layout.setContextWidth} onToggleWidth={layout.toggleContextWidth} onClose={() => layout.setInspectorOpen(false)} onDecideReview={decideReview} onRefreshRepository={refreshActiveRepository} />
@@ -205,6 +239,7 @@ export function App() {
         <Statusbar snapshot={snapshot} task={selectedTask} onWorkspace={() => layout.showSidebarPanel("tasks")} onAgents={() => layout.showSidebarPanel("agents")} onOutput={() => layout.showInspectorPanel("terminal")} onReview={() => layout.showInspectorPanel("diff")} />
       </div>
       <NewTaskDialog open={newTaskOpen} onClose={() => setNewTaskOpen(false)} onCreate={addTask} />
+      <OpenWorkspaceDialog activePath={snapshot.repository?.root} open={workspaceOpen} recentWorkspaces={recentWorkspaces} onClose={() => setWorkspaceOpen(false)} onOpen={openRepositoryWorkspace} onRemove={forgetRecentWorkspace} onCloseWorkspace={closeRepositoryWorkspace} />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} settings={settings} onUpdate={handleSettingsUpdate} onReset={handleSettingsReset} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onCommand={runPaletteCommand} tasks={snapshot.tasks} />
       <div id="toast" className={`toast glass-surface${toast ? " visible" : ""}`} role="status" aria-live="polite">{toast}</div>
