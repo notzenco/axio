@@ -121,6 +121,14 @@ pub struct RepositoryFileContent {
     pub binary: bool,
 }
 
+/// One repository the user has explicitly opened in Axio.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecentWorkspace {
+    pub path: String,
+    pub name: String,
+    pub last_opened_unix_ms: u64,
+}
+
 /// A serializable view of the current local workspace.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkspaceSnapshot {
@@ -131,4 +139,12 @@ pub struct WorkspaceSnapshot {
     pub selected_task: String,
     pub activity: Vec<WorkspaceActivity>,
     pub repository: Option<RepositorySnapshot>,
+}
+
+/// The desktop workspace plus its durable local repository history.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkspaceLifecycleSnapshot {
+    pub workspace: WorkspaceSnapshot,
+    pub recent_workspaces: Vec<RecentWorkspace>,
+    pub persistence_warning: Option<String>,
 }

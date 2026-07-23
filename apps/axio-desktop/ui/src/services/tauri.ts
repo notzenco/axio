@@ -1,4 +1,4 @@
-import type { AgentStatus, RepositoryFileContent, WorkspaceSnapshot } from "../types";
+import type { AgentStatus, RepositoryFileContent, WorkspaceLifecycleSnapshot, WorkspaceSnapshot } from "../types";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -17,6 +17,22 @@ export const isNative = Boolean(invoke);
 
 export function workspaceSnapshot() {
   return invoke?.<WorkspaceSnapshot>("workspace_snapshot");
+}
+
+export function workspaceLifecycle() {
+  return invoke?.<WorkspaceLifecycleSnapshot>("workspace_lifecycle");
+}
+
+export function openWorkspace(path: string) {
+  return invoke?.<WorkspaceLifecycleSnapshot>("open_workspace", { path });
+}
+
+export function closeWorkspace() {
+  return invoke?.<WorkspaceLifecycleSnapshot>("close_workspace");
+}
+
+export function removeRecentWorkspace(path: string) {
+  return invoke?.<WorkspaceLifecycleSnapshot>("remove_recent_workspace", { path });
 }
 
 export function refreshRepository() {

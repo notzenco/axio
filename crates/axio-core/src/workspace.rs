@@ -43,6 +43,13 @@ impl Workspace {
         self.snapshot.repository = Some(repository);
     }
 
+    /// Closes Axio's reference to the active repository without touching it.
+    pub fn close_repository(&mut self) {
+        self.snapshot.project = "No workspace".to_owned();
+        self.snapshot.branch = "—".to_owned();
+        self.snapshot.repository = None;
+    }
+
     /// Applies a validated lifecycle transition to one agent.
     pub fn transition_agent(&mut self, id: &str, next: AgentStatus) -> Result<(), CoreError> {
         let agent = self

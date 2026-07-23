@@ -58,6 +58,12 @@ export interface RepositoryFileContent {
   binary: boolean;
 }
 
+export interface RecentWorkspace {
+  path: string;
+  name: string;
+  last_opened_unix_ms: number;
+}
+
 export interface WorkspaceSnapshot {
   project: string;
   branch: string;
@@ -66,6 +72,12 @@ export interface WorkspaceSnapshot {
   selected_task: string;
   activity: WorkspaceActivity[];
   repository?: RepositorySnapshot | null;
+}
+
+export interface WorkspaceLifecycleSnapshot {
+  workspace: WorkspaceSnapshot;
+  recent_workspaces: RecentWorkspace[];
+  persistence_warning?: string | null;
 }
 
 export type SidebarPanel = "tasks" | "agents";

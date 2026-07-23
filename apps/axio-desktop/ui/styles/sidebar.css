@@ -3,6 +3,10 @@
 .sidebar-header, .inspector-header { display: flex; justify-content: space-between; align-items: center; min-height: 62px; padding: 0 14px; border-bottom: 1px solid var(--line); }
 .sidebar-header > div, .inspector-header > div { display: grid; gap: 3px; }
 .sidebar-header strong, .inspector-header strong { font-size: 12px; font-weight: 620; }
+.workspace-switcher { display: grid; min-width: 0; max-width: calc(100% - 38px); gap: 2px; padding: 5px 7px; border-radius: 8px; background: transparent; color: inherit; text-align: left; }
+.workspace-switcher:hover { background: rgba(255,255,255,.045); }
+.workspace-switcher strong, .workspace-switcher small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-switcher small { color: var(--faint); font-size: 8px; }
 .eyebrow, .panel-label { color: var(--faint); font-size: 9px; font-weight: 670; letter-spacing: .1em; text-transform: uppercase; }
 .sidebar-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 10px; padding: 3px; border: 1px solid rgba(255,255,255,.045); border-radius: 9px; background: rgba(0,0,0,.15); }
 .sidebar-tabs button { height: 27px; border-radius: 6px; background: transparent; color: var(--faint); font-size: 10px; }

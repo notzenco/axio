@@ -10,11 +10,12 @@ finished agent runtime.
 
 Axio is an early, public Rust and Tauri foundation at `0.0.1`. It has a working
 native desktop shell, a responsive task-first interface, a shared typed state
-model, validated in-memory transitions, read-only discovery of the containing
-Git repository, and a small CLI. The current build combines a real repository
-boundary with deterministic task and agent demo data. It does not yet launch or
-supervise real coding agents, create Git worktrees, stream terminals, persist
-workspaces, or render complete live diffs.
+model, validated in-memory transitions, explicit local Git repository opening,
+a recoverable recent-workspace catalog, and a small CLI. The current build
+combines a real repository boundary with deterministic task and agent demo
+data. It does not yet launch or supervise real coding agents, create Git
+worktrees, stream terminals, persist complete task state, or render complete
+live diffs.
 
 There is one desktop product. The CLI remains a separate automation consumer of
 the same Rust core. The paused legacy switcher is not a second current app.
@@ -26,6 +27,7 @@ the same Rust core. The paused legacy switcher is not a second current app.
 | Protocol | Serializable agent, task, activity, review, and workspace snapshot types. | `crates/axio-protocol`; Rust compilation and tests. |
 | Core state | Validated agent transitions, task selection/creation, direction events, and review decisions. | `crates/axio-core`; five unit tests. |
 | Repository inspection | Discovers the Git checkout containing the process directory or executable, then reads its root, branch, tracked/untracked file inventory, working-tree statuses, and text line statistics without invoking a shell. | `crates/axio-core/src/repository.rs`; parser tests and live CLI verification. |
+| Workspace lifecycle | Opens a Git repository from an explicit local path, keeps bounded recents, remembers the selected demo task per repository, restores after restart, and closes or forgets repositories without changing source files. A versioned two-slot local store retains the last valid generation after an interrupted or corrupt write. | `crates/axio-core/src/persistence.rs`; Rust recovery/path/removal tests and native Windows restart verification. |
 | CLI | `status`, `status --json`, and `version` over the shared snapshot, enriched with live repository data when discovery succeeds. | CLI smoke test in CI and local repository verification. |
 | Native shell | Tauri window, drag/minimize/maximize/close, narrow command bridge, and restrictive CSP. | Native release build and manual Windows run. |
 | Task workspace | Task/worktree selection, chronological activity, explicit attention state, inline task validation, agent controls, directions, and review decisions. | Browser and native interaction verification. |
@@ -62,8 +64,10 @@ process life.
 
 ## Not implemented
 
-- Repository/folder picker, recent-workspace management, and explicit close.
-- Durable database, migrations, crash recovery, or session restoration.
+- Native OS folder chooser; the current dialog accepts and validates an
+  explicit repository path.
+- Complete task/event persistence, forward migrations beyond the initial
+  schema, and full session/crash restoration.
 - Agent connector descriptors, authentication handoff, or process supervision.
 - PTY terminal sessions, structured tool events, logs, cancellation, or timeouts.
 - Git worktrees, complete diffs, staging, merge, or conflict flows.
@@ -92,8 +96,9 @@ process life.
 The next work is outcome-driven rather than tied to invented version numbers or
 dates. The dependency order is:
 
-1. Extend automatic read-only repository discovery into explicit open/recent
-   workspace selection and durable restoration.
+1. Complete the durable workspace outcome with a native folder chooser,
+   complete task-state restoration, and migration coverage for each future
+   persisted schema version.
 2. Define and prove one real external-agent connector lifecycle.
 3. Turn process, terminal, tool, and approval events into the task narrative.
 4. Connect task boundaries to real Git worktrees and review operations.

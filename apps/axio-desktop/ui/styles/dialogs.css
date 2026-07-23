@@ -49,6 +49,23 @@
 .modal legend { padding: 0 5px; color: var(--muted); font-size: 9px; }
 .modal fieldset label { display: flex; align-items: center; gap: 6px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 8px; color: #b6bdc7; font-size: 9px; }
 .modal input { accent-color: var(--violet); }
+.workspace-modal { width: min(620px, calc(100vw - 30px)); }
+.workspace-path-field input { height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: rgba(5, 7, 11, .5); color: #cbd0d8; }
+.workspace-path-field input:focus { border-color: color-mix(in srgb, var(--violet) 58%, transparent); outline: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--violet) 12%, transparent); }
+.workspace-modal > form > footer { margin-top: 12px; }
+.recent-workspaces { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+.recent-workspaces .panel-label { padding-inline: 0; }
+.workspace-empty { margin: 8px 0; color: var(--faint); font-size: 9px; }
+.recent-workspace-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 5px; border-radius: 9px; }
+.recent-workspace-row:hover, .recent-workspace-row.active { background: rgba(255,255,255,.04); }
+.recent-workspace-row > button:first-child { display: grid; min-width: 0; gap: 3px; padding: 6px; background: transparent; color: #cbd0d8; text-align: left; }
+.recent-workspace-row strong, .recent-workspace-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-workspace-row strong { font-size: 10px; }
+.recent-workspace-row small { color: var(--faint); font-size: 8px; }
+.workspace-close-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.12); }
+.workspace-close-row > span { display: grid; gap: 3px; }
+.workspace-close-row strong { font-size: 10px; }
+.workspace-close-row small { color: var(--faint); font-size: 8px; }
 .modal footer { justify-content: flex-end; gap: 7px; }
 .modal-symbol { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid rgba(154, 124, 255, .24); border-radius: 9px; background: rgba(154, 124, 255, .1); color: #c9beff; }
 

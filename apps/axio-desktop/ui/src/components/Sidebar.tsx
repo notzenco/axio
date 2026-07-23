@@ -8,6 +8,7 @@ interface SidebarProps {
   onTransitionAgent: (agent: AgentSession) => void;
   onResize: (width: number) => void;
   onNewTask: () => void;
+  onOpenWorkspace: () => void;
   onNotify: (message: string) => void;
   onPanelChange: (panel: "tasks" | "agents") => void;
   panel: "tasks" | "agents";
@@ -25,13 +26,13 @@ function TaskRow({ selected, task, onSelect }: { selected: boolean; task: Worksp
   );
 }
 
-export function Sidebar({ onNewTask, onNotify, onPanelChange, onResize, onSelectTask, onTransitionAgent, panel, snapshot, width }: SidebarProps) {
+export function Sidebar({ onNewTask, onNotify, onOpenWorkspace, onPanelChange, onResize, onSelectTask, onTransitionAgent, panel, snapshot, width }: SidebarProps) {
   const activeCount = snapshot.agents.filter((agent) => ["running", "waiting", "starting"].includes(agent.status)).length;
   return (
     <aside id="sidebar" className="sidebar glass-panel">
       <PanelResizeHandle label="Resize workspace panel" side="left" min={panelSizeLimits.workspace.min} max={panelSizeLimits.workspace.max} value={width} onChange={onResize} onReset={() => onResize(panelSizeLimits.workspace.default)} />
       <header className="sidebar-header">
-        <div><span className="eyebrow">Workspace</span><strong>Command centre</strong></div>
+        <button className="workspace-switcher" type="button" onClick={onOpenWorkspace} aria-label={`Switch workspace, current workspace ${snapshot.project}`}><span className="eyebrow">Workspace</span><strong>{snapshot.project}</strong><small>{snapshot.repository?.root ?? "Open a local repository"}</small></button>
         <button id="new-task" className="icon-button" type="button" aria-label="New task" title="New task" onClick={onNewTask}><Add20Regular /></button>
       </header>
       <div className="sidebar-tabs" role="tablist" aria-label="Workspace context">
