@@ -10,6 +10,7 @@ import {
 import { subscribeTerminalOutput } from "../../services/terminal-events";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
 import { TerminalInputBuffer } from "../../data/terminal-input";
+import { TerminalReplayBuffer } from "../../data/terminal-output";
 import { terminalProviderLabel } from "../../data/terminal-providers";
 import { TerminalRenderQueue } from "../../data/terminal-rendering";
 import { TerminalResizeScheduler } from "../../data/terminal-resize";
@@ -79,7 +80,7 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
       (frameId) => window.cancelAnimationFrame(frameId),
     );
     const nextOffset = { current: 0 };
-    const pending: TerminalOutputEvent[] = [];
+    const pending = new TerminalReplayBuffer();
     let replayReady = false;
     let disposed = false;
     let unlisten = () => {};
@@ -140,8 +141,9 @@ export function TerminalPane({ onClose, onError, onStop, session }: TerminalPane
           nextOffset.current = replay.end_offset;
         }
         replayReady = true;
-        pending.sort((left, right) => left.offset - right.offset);
-        for (const event of pending) queueOrderedEvent(renderer, event, nextOffset);
+        const replayBatch = pending.drain(session.id, nextOffset.current);
+        if (replayBatch.gap) renderer.markSkippedOutput();
+        for (const event of replayBatch.events) queueOrderedEvent(renderer, event, nextOffset);
       },
       (error) => {
         if (!disposed) onError(String(error));

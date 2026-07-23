@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { agentRuntimes, sessionsForTask, taskStateSteps } from "../src/data/task-runtime";
-import { cleanTerminalText, TerminalOutputRouter } from "../src/data/terminal-output";
+import {
+  cleanTerminalText,
+  TerminalOutputRouter,
+  TerminalReplayBuffer,
+} from "../src/data/terminal-output";
 import { TerminalRenderQueue } from "../src/data/terminal-rendering";
 import type { AgentSession, TerminalSessionSnapshot, WorkspaceSnapshot, WorkspaceTask } from "../src/types";
 
@@ -130,5 +134,35 @@ describe("task runtime projections", () => {
       );
     });
     renderers.forEach((renderer) => renderer.dispose());
+  });
+
+  test("bounds concurrent replay traffic and preserves offset recovery across 12 panes", () => {
+    const buffers = Array.from({ length: 12 }, () => new TerminalReplayBuffer(64 * 1024, 128));
+
+    for (let event = 0; event < 2_400_000; event += 1) {
+      const session = event % buffers.length;
+      const offset = Math.floor(event / buffers.length);
+      buffers[session].push({
+        session_id: `session-${session}`,
+        offset,
+        data: [offset % 251],
+      });
+    }
+
+    buffers.forEach((buffer, session) => {
+      const staleReplay = buffer.drain(`session-${session}`, 0);
+      expect(staleReplay.gap).toBe(true);
+      expect(staleReplay.events).toHaveLength(128);
+      expect(staleReplay.events[0].offset).toBe(200_000 - 128);
+      expect(staleReplay.events.at(-1)?.offset).toBe(199_999);
+    });
+
+    const covered = new TerminalReplayBuffer(4, 4);
+    for (let offset = 0; offset < 8; offset += 1) {
+      covered.push({ session_id: "covered", offset, data: [offset] });
+    }
+    const coveredReplay = covered.drain("covered", 6);
+    expect(coveredReplay.gap).toBe(false);
+    expect(coveredReplay.events.map((event) => event.offset)).toEqual([6, 7]);
   });
 });

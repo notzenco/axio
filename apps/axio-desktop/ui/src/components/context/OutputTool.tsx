@@ -1,7 +1,7 @@
 import { Open20Regular, WindowConsole20Regular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import { terminalProviderLabel } from "../../data/terminal-providers";
-import { cleanTerminalText } from "../../data/terminal-output";
+import { cleanTerminalText, TerminalReplayBuffer } from "../../data/terminal-output";
 import { listenTerminalOutput, terminalOutput } from "../../services/tauri";
 import type { TerminalOutputEvent, TerminalSessionSnapshot } from "../../types";
 
@@ -37,7 +37,7 @@ export function OutputTool({ active, onOpenTerminal, sessions }: { active: boole
     let frame = 0;
     let unlisten = () => {};
     const decoder = new TextDecoder();
-    const pending: TerminalOutputEvent[] = [];
+    const pending = new TerminalReplayBuffer();
     let pendingText = "";
     const flush = () => {
       frame = 0;
@@ -73,7 +73,11 @@ export function OutputTool({ active, onOpenTerminal, sessions }: { active: boole
         setByteCount(replay.data.length);
         nextOffset = replay.end_offset;
         ready = true;
-        pending.sort((left, right) => left.offset - right.offset).forEach(append);
+        const replayBatch = pending.drain(selectedSession.id, nextOffset);
+        if (replayBatch.gap) {
+          pendingText += "\n[Output skipped while replay was loading]\n";
+        }
+        replayBatch.events.forEach(append);
       } catch {
         if (!disposed) setText("Output is unavailable for this session.");
       }

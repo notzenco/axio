@@ -106,6 +106,10 @@ export class TerminalRenderQueue {
     this.schedule();
   }
 
+  markSkippedOutput() {
+    this.push(skippedOutputMarker);
+  }
+
   dispose() {
     this.disposed = true;
     if (this.frameId) this.cancelFrame(this.frameId);
