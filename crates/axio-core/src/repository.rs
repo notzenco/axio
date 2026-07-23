@@ -10,9 +10,13 @@ use std::{
 };
 
 use axio_protocol::{RepositoryChange, RepositoryFileContent, RepositorySnapshot};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 const MAX_REPOSITORY_FILES: usize = 2_500;
 const MAX_FILE_PREVIEW_BYTES: u64 = 256 * 1024;
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 /// A failure to discover or inspect a local Git repository.
 #[derive(Debug)]
@@ -205,12 +209,11 @@ fn git<const N: usize>(
     root: &Path,
     arguments: [&str; N],
 ) -> Result<std::process::Output, RepositoryError> {
-    Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(arguments)
-        .output()
-        .map_err(RepositoryError::GitUnavailable)
+    let mut command = Command::new("git");
+    command.arg("-C").arg(root).args(arguments);
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    command.output().map_err(RepositoryError::GitUnavailable)
 }
 
 fn git_text<const N: usize>(root: &Path, arguments: [&str; N]) -> Result<String, RepositoryError> {
