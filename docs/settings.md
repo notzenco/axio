@@ -18,9 +18,9 @@ Reset all restores every category to the defaults in this document.
 |---|---:|---|
 | Open workspace sidebar | On | Opens Tasks and Worktrees when Axio starts on a wide viewport. |
 | Open context dock | On | Opens the context dock when Axio starts on a wide viewport. |
-| Default context tool | Review when required | Selects Browser, Files, Terminal, Plan, or the contextual Review surface as the initial dock content. Changing it also updates the current dock selection without forcing the dock open. |
+| Default context tool | Review when required | Selects Browser, Files, Output, Plan, or the contextual Review surface as the initial dock content. Changing it also updates the current dock selection without forcing the dock open. |
 | Open pending reviews automatically | On | Opens and expands Review when the selected task requires attention. |
-| Show toolbar labels | On | Shows text beside the Activity/Canvas/Terminal modes and Browser, Files, Terminal, and Plan tools when space permits. Turning it off keeps accessible names and hover titles. |
+| Show toolbar labels | On | Shows text beside the Activity/Canvas/Terminal modes and Browser, Files, Output, and Plan tools when space permits. Turning it off keeps accessible names and hover titles. |
 | Show contextual review notice | On | Shows the changed-file notice beside the workspace navigation when a review gate needs attention. |
 | Show status bar | On | Shows local-engine, worktree, branch, agent, and check status. |
 

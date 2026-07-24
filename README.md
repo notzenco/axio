@@ -35,6 +35,9 @@ The current foundation contains:
 - a task-first timeline, resizable workspace navigation, a contextual
   browser/files/review/output/plan tool dock, native window controls, and local
   review gates;
+- a native multi-pane Terminal mode for bounded Codex, Claude Code, OpenCode,
+  and shell PTYs with app-wide capacity, streamed output, input, resize, and
+  lifecycle controls;
 - inline task validation, explicit direction context, changed-file navigation,
   accessible focus handling, and mutually exclusive compact overlays;
 - pinned, least-privilege CI and public project policies.
@@ -53,8 +56,9 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli -- status --json
+bun run --cwd apps/axio-desktop test:ui
 bun run --cwd apps/axio-desktop build:vite
-cargo build --release -p axio-desktop --locked
+bun run --cwd apps/axio-desktop build
 bun run --cwd apps/axio-desktop dev
 ```
 
@@ -65,6 +69,8 @@ The [documentation index](docs/README.md) links the complete current set. Start
 with [status and direction](docs/status-and-direction.md) for the exact boundary
 between implemented behavior, simulated UI, missing runtime work, and intended
 outcomes.
+The native terminal contract is documented separately in
+[Terminal mode](docs/terminal-mode.md).
 
 ## Status
 

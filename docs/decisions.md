@@ -118,3 +118,16 @@ their architecture, code, license obligations, or update cadence.
 
 **Consequence:** Any code reuse requires an explicit license and attribution
 review; reference clones are never committed.
+
+## D-011: terminal sessions are transient application-owned processes
+
+**Decision:** Native Terminal sessions belong to the running Axio application,
+use one app-wide capacity boundary, and do not enter durable workspace state.
+
+**Why:** Process handles, credentials, and raw PTY output cannot be restored
+truthfully after restart. One owner also makes launch limits and shutdown
+cleanup enforceable.
+
+**Consequence:** Restart shows no restored terminal panes. Durable command or
+connector history requires a separate redacted event contract, while Windows
+process trees remain attached to Axio's kill-on-close Job Object.

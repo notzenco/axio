@@ -35,6 +35,8 @@ workspace are historical evidence, not current instructions.
 ## Engineering
 
 - [`architecture.md`](architecture.md) — crate and desktop boundaries.
+- [`terminal-mode.md`](terminal-mode.md) — current providers, capacity,
+  lifecycle, performance bounds, recovery, and process-security contract.
 - [`protocol.md`](protocol.md) — current data model, transitions, commands, and
   compatibility posture.
 - [`development.md`](development.md) — repository layout and daily workflows.

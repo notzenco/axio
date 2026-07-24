@@ -34,13 +34,14 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli --locked -- status --json
 node scripts\check-ui.mjs
+bun run --cwd apps\axio-desktop test:ui
 bun run --cwd apps\axio-desktop build:vite
 ```
 
 Build the native release shell with:
 
 ```powershell
-cargo build --release -p axio-desktop --locked
+bun run --cwd apps\axio-desktop build
 ```
 
 ## Run the native app
@@ -91,6 +92,8 @@ work adds or supersedes an entry in [`decisions.md`](decisions.md). User-visible
 changes update [`../CHANGELOG.md`](../CHANGELOG.md). Desktop interaction or
 visual changes also update [`testing.md`](testing.md), the relevant design
 contract, and [`../design-qa.md`](../design-qa.md) with matched evidence.
+Terminal runtime changes also update
+[`terminal-mode.md`](terminal-mode.md).
 
 ## Git practice
 

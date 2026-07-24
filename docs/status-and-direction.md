@@ -37,7 +37,7 @@ the same Rust core. The paused legacy switcher is not a second current app.
 | Navigation | Independently collapsible wide panels, mutually exclusive focus-contained compact overlays, focus mode, and a command palette with recovery state. | `design-qa.md` at desktop and compact viewports. |
 | Composer | Records a direction, decision, or handoff in the selected task activity. It explicitly does not claim to route text to a provider. | Core tests and UI interaction verification. |
 | Context tools | Independently resizable dock with an explicitly unconnected Browser state, live repository files and review facts, real bounded PTY output, and task state derived from repository, session, and review data. The former secondary Terminal is named Output. | UI tests and `ui/src/components/context/`. |
-| Terminal mode | Launches up to 12 concurrent provider or shell PTYs in an adaptive pane grid, with bounded output replay, ANSI rendering, keyboard input, resize, PID/exit state, and stop/close controls. Sessions use the selected repository root, are scoped to the selected task, and stop when their repository closes or changes. | `src-tauri/src/terminal.rs`; Rust boundary tests, TypeScript tests, production build, and native Windows interaction verification. |
+| Terminal mode | Launches serialized batches of Codex, Claude Code, OpenCode, or shell PTYs in an adaptive pane grid, with an authoritative 12-session app-wide limit, bounded replay/render pressure, batched input and resize, monotonic lifecycle recovery, read-only exited panes, PID/exit state, and guarded stop/close controls. Sessions use the selected repository root, are scoped to the selected task, and stop when their repository closes or changes. | [`terminal-mode.md`](terminal-mode.md); Rust boundary tests, TypeScript stress tests, optimized build, and packaged Windows smoke verification. |
 | Settings | Searchable Appearance, Workspace, Composer, and Accessibility categories with typed local persistence and reset, including toolbar labels, Review count, and startup context-tool preferences. | `settings.md`, `ui/src/hooks/useSettings.ts`, `ui/src/components/settings/`, and browser interaction verification. |
 | Delivery checks | Windows CI runs formatting, Clippy, tests, and CLI JSON smoke; local verification adds TypeScript checking, the Vite production build, interaction QA, and native release compilation. | `.github/workflows/ci.yml`, `testing.md`, and the latest `design-qa.md`. |
 | Documentation | Architecture, product, design, setup, references, security, testing, and release guidance. | This documentation index and link audit. |
@@ -95,6 +95,9 @@ rewritten.
 - The UI now uses TypeScript, React, and Vite with feature-owned components,
   hooks, services, fixtures, and styles. Automated interaction coverage still
   needs to move from the manual release gate into CI as behavior grows.
+- Terminal capacity, replay, rendering, input, resize, and lifecycle state are
+  bounded and stress-tested, but live provider authentication and end-to-end
+  PTY interaction remain an explicit manual boundary.
 - The current Linux Tauri dependency chain includes `glib 0.18.5`. GitHub has an
   open moderate alert for unsound iterator implementations; the patched line
   begins at `0.20.0`, while Tauri's GTK3 stack currently selects `0.18.x`.

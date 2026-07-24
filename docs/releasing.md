@@ -8,8 +8,9 @@ installer, signing flow, update channel, or rollback contract.
 
 ```powershell
 bun install --cwd apps\axio-desktop
+bun run --cwd apps\axio-desktop test:ui
 bun run --cwd apps\axio-desktop build:vite
-cargo build --release -p axio-desktop --locked
+bun run --cwd apps\axio-desktop build
 ```
 
 The resulting local executable is a verification artifact, not a published
@@ -21,6 +22,8 @@ Before any tagged preview:
 
 - working tree is clean and the release commit is on the protected remote;
 - formatting, Clippy, tests, CLI smoke, and native release build pass;
+- the packaged executable opens Terminal mode, reports native app-wide
+  capacity, closes cleanly, and leaves no owned process behind;
 - protocol, status, changelog, and migration documentation match behavior;
 - supported platforms and required system dependencies are explicit;
 - dependency/security review has no unexplained result;

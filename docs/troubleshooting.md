@@ -70,6 +70,12 @@ Terminal mode starts real processes in the selected repository root. It does
 not create worktrees or isolate concurrent agents yet, so do not let multiple
 panes edit the same files unless that overlap is intentional.
 
+Axio accepts at most eight instances per launch and 12 active sessions
+app-wide. A stopping session retains its capacity slot until the process exits.
+If capacity cannot be queried, Terminal mode shows `Capacity unavailable`; use
+Retry after the native runtime is responsive. Exited panes intentionally
+retain scrollback but no longer accept input.
+
 ## Directions do not reach a Terminal agent
 
 Terminal panes are real interactive processes, but composer directions and
@@ -77,3 +83,6 @@ persisted agent cards are not connected to them yet. Enter prompts directly in
 the desired pane. Git worktrees, complete diff, and plan content remain
 incomplete. See [`status-and-direction.md`](status-and-direction.md) for the
 precise boundary.
+
+The full process, capacity, lifecycle, and performance contract is in
+[`terminal-mode.md`](terminal-mode.md).

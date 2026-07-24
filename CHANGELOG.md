@@ -46,6 +46,13 @@ repositories and is not continued by this project.
 - Batched PTY output and burst input, removed terminal I/O from the global
   session lock, and stopped redundant PTY resizes that slowed interactive
   coding-agent terminals.
+- Added authoritative app-wide terminal capacity, serialized launch batches,
+  bounded replay/render pressure, and lifecycle reconciliation under sustained
+  multi-pane output.
+- Prevented task-switch launch races, duplicate Stop/Close requests, stale
+  refreshes recreating closed panes, and terminal-window/process leaks.
+- Made stopped and exited terminal panes read-only while retaining scrollback,
+  discarding buffered input, and suppressing irrelevant late write errors.
 - Raised muted-text contrast, reduced routine timeline chrome, added non-colour
   task/agent states, and aligned native window controls to the right edge.
 

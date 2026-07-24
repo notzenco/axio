@@ -33,10 +33,15 @@ The default desktop view is task-first:
 1. The left side answers where work lives: tasks, worktrees, and agents.
 2. The center tells the chronological story of a task: messages, tool calls,
    questions, approvals, file changes, and handoffs.
-3. The optional right dock provides browser, files, review, output, and plan
+3. Activity, Canvas, and Terminal provide narrative, overview, and live-process
+   modes for the selected task.
+4. The optional right dock provides browser, files, review, output, and plan
    tools without turning them into permanent top-level navigation.
-4. Focus mode hides navigation and review chrome without moving the task into
+5. Focus mode hides navigation and review chrome without moving the task into
    another product.
+
+The implemented native process surface and its current non-claims are in
+[`terminal-mode.md`](terminal-mode.md).
 
 ## Stable goal
 

@@ -35,6 +35,9 @@ task. Approval requests appear inline at the point that produced them.
 - Activity, Canvas, and Terminal are peer task modes. Terminal uses the central
   workspace for an adaptive pane grid; the smaller Output context tool remains
   a completed-command view rather than an interactive PTY.
+- Terminal launch controls show authoritative app-wide capacity, remain gated
+  while it is unknown, and disable per-pane lifecycle actions while native work
+  is pending. Exited panes retain selectable scrollback but become read-only.
 - Workspace settings can make the task toolbar icon-only, hide its Review count,
   and choose the dock's initial tool without removing accessible names or
   attention state.
@@ -81,7 +84,9 @@ surfaces keep an opaque-enough fallback for readability.
 Implementation screenshots and the responsive comparison record live in
 [`design/`](design/), with the latest verification summarized in
 [`../design-qa.md`](../design-qa.md).
-The complete preference contract is in [`settings.md`](settings.md).
+The complete preference contract is in [`settings.md`](settings.md). The
+complete terminal interaction and lifecycle contract is in
+[`terminal-mode.md`](terminal-mode.md).
 
 Controls that currently mutate demo state rather than connector or Git
 resources are identified in

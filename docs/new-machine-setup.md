@@ -58,8 +58,9 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli -- status --json
 node scripts\check-ui.mjs
+bun run --cwd apps\axio-desktop test:ui
 bun run --cwd apps\axio-desktop build:vite
-cargo build --release -p axio-desktop --locked
+bun run --cwd apps\axio-desktop build
 ```
 
 Run the desktop during development with:

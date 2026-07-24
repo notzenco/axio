@@ -402,3 +402,35 @@ individual-agent targets.
 - No actionable P0/P1/P2 differences remain in the destination-feedback flow.
 
 final result: passed
+
+## Terminal runtime reliability QA — 2026-07-24
+
+The optimized Windows executable was launched repeatedly through native UI
+automation after the terminal performance and lifecycle hardening passes.
+Terminal mode opened inside the existing Axio window with no provider session
+started during automation.
+
+- The native capacity label resolved to `0 of 12 active app-wide`.
+- Provider and instance controls remained available only after capacity
+  resolved.
+- Opening Terminal mode did not create additional top-level windows.
+- Closing Axio left zero Axio windows and zero release-process leaks.
+- Automated stress covered launch capacity, serialized native contention,
+  lifecycle reconciliation, replay ordering, render pressure, preview batching,
+  resize coalescing, per-session Stop/Close gates, and read-only input
+  transitions.
+- The final automated gate passed 26 Rust tests and 26 TypeScript UI tests,
+  formatting, warning-denied Clippy, type checking, Vite production build, and
+  optimized Tauri compilation.
+
+Live provider authentication and interactive agent input were intentionally not
+automated; they remain a user-controlled manual boundary documented in
+`docs/terminal-mode.md`.
+
+**Findings**
+
+- No actionable launch, capacity, packaged-window, or shutdown regression
+  remains in the verified zero-session state.
+- Live provider E2E coverage remains outstanding and is not claimed here.
+
+final result: passed

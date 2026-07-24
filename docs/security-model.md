@@ -69,10 +69,14 @@ Future Axio versions will handle:
   the authority of the launched process and is bounded per IPC write.
 - The working directory comes from the active repository snapshot rather than
   user-entered terminal text.
-- Spawn requests are limited to eight instances and 12 running sessions total.
+- Spawn requests are limited to eight instances and 12 active sessions total.
+- Launch batches are serialized in Rust; running and stopping sessions share
+  the same app-wide 12-session capacity.
 - Output replay is memory-bounded and rendered by xterm without HTML injection.
 - Sessions expose explicit stop and close operations and are stopped when their
   repository is closed or replaced.
+- Non-running panes disable stdin, discard buffered input, and gate duplicate
+  stop/close operations while retaining read-only scrollback.
 - Output, environment values, and credentials are not written to workspace
   persistence.
 
@@ -109,3 +113,6 @@ directions, or enforce durable retention limits. The local-only principle,
 bounded in-memory output, and recoverable workspace writes reduce exposure and
 data-loss risk but do not replace process, path, secret, storage, and release
 controls.
+
+The detailed operational bounds and lifecycle behavior are recorded in
+[`terminal-mode.md`](terminal-mode.md).

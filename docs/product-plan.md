@@ -67,9 +67,11 @@ needs attention now.
 
 The first terminal substrate is implemented: task-scoped, multi-pane native
 PTYs stream bounded output to ANSI-capable renderers and support input, resize,
-stop, and exit status. Connector normalization, durable/redacted events,
-backpressure guarantees, search, export, and restart reconciliation remain
-inside this outcome.
+stop, close, app-wide capacity, read-only exit behavior, and exit status.
+Launch serialization, replay/render backpressure, input/resize batching, and
+Windows process-tree cleanup are verified. Connector normalization,
+durable/redacted events, search, export, and restart reconciliation remain
+inside this outcome. See [`terminal-mode.md`](terminal-mode.md).
 
 Scope:
 

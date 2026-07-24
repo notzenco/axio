@@ -67,6 +67,9 @@ repository root, working directory, PID, lifecycle state, and exit code without
 including output or environment values. `TerminalOutputSnapshot` and
 `TerminalOutputEvent` carry bounded binary PTY data with byte offsets so a pane
 can combine replay and live events without gaps or duplication.
+`terminal_capacity` returns the number of app-wide running or stopping
+sessions. It is authoritative for launch-control UX; the native spawn boundary
+still validates and serializes every batch.
 
 ## Tauri command boundary
 
@@ -86,6 +89,7 @@ The desktop exposes:
 - `send_direction`
 - `review_task`
 - `terminal_sessions`
+- `terminal_capacity`
 - `spawn_terminal_instances`
 - `terminal_output`
 - `write_terminal_input`
@@ -96,8 +100,10 @@ The desktop exposes:
 
 Workspace commands return a complete updated snapshot or a string error. The
 terminal boundary accepts only known providers, bounded counts, existing
-session IDs, byte input, and dimensions. The window command accepts only drag,
-minimize, maximize/unmaximize, and close.
+session IDs, byte input, and dimensions. Batches contain one to eight sessions,
+the application allows 12 active sessions, and stopping sessions retain their
+slot until exit. The window command accepts only drag, minimize,
+maximize/unmaximize, and close.
 
 ## CLI contract
 

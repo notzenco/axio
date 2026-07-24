@@ -11,6 +11,8 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 node scripts/check-ui.mjs
+bun run --cwd apps/axio-desktop test:ui
+bun run --cwd apps/axio-desktop build:vite
 ```
 
 Desktop or native-boundary changes also require a release build and the manual

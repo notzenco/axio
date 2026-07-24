@@ -32,9 +32,13 @@ consistent while allowing a compact focused-task window when useful.
 PTY ownership is currently a deliberate desktop-only subsystem in
 `src-tauri/src/terminal.rs`. It launches only known local provider commands,
 keeps process handles and bounded output in memory, emits offset binary chunks
-to the webview, and stops repository-scoped sessions when that workspace is
-closed or replaced. On Windows, all launched processes share a kill-on-close
-job object so a forced Axio exit also tears down their process trees.
+to the webview, serializes launch batches against one app-wide capacity limit,
+and stops repository-scoped sessions when that workspace is closed or replaced.
+The React hook reconciles transient lifecycle state and owns UI operation
+gates; xterm panes own bounded rendering, input batching, resize coalescing, and
+read-only exit behavior. On Windows, all launched processes share a
+kill-on-close job object so a forced Axio exit also tears down their process
+trees.
 Cross-boundary terminal metadata lives in `axio-protocol`; terminal output is
 not part of durable `WorkspaceSession` state.
 
@@ -81,5 +85,6 @@ future integrations behind those surfaces; bounded repository inspection and
 safe text reads are already Rust-backed.
 
 See [`protocol.md`](protocol.md) for the current state vocabulary and command
-boundary, [`security-model.md`](security-model.md) for trust boundaries, and
+boundary, [`terminal-mode.md`](terminal-mode.md) for the complete PTY contract,
+[`security-model.md`](security-model.md) for trust boundaries, and
 [`status-and-direction.md`](status-and-direction.md) for what remains simulated.

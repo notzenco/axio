@@ -11,7 +11,9 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo run -p axio-cli --locked -- status --json
 node scripts\check-ui.mjs
+bun run --cwd apps\axio-desktop test:ui
 bun run --cwd apps\axio-desktop build:vite
+bun run --cwd apps\axio-desktop build
 git diff --check
 ```
 
@@ -22,15 +24,19 @@ exist.
 
 ## Current Rust coverage
 
-Fifteen core tests cover transition rules, task/direction/review mutations,
+Eighteen core tests cover transition rules, task/direction/review mutations,
 repository parsing and safe reads, closed/restored state invariants, Unicode
 paths, per-repository session isolation, two-slot corruption recovery, source
 directory safety, and schema-v1-to-v2 migration. A desktop-runtime integration
 test reconstructs the runtime from disk and verifies that task creation,
 directions, reviews, agent status, and selection survive restart.
-Two terminal-runtime tests verify spawn limits and the bounded replay buffer.
-Five TypeScript tests cover task activity ordering, repository-tree behavior,
-and terminal provider/count controls.
+Eight desktop tests cover runtime restart/cache behavior plus terminal capacity,
+serialized launch contention, lifecycle accounting, and bounded output.
+Twenty-six TypeScript tests across five files cover activity ordering,
+repository trees, settings migration, task-runtime projection, terminal replay
+and rendering backpressure, preview batching, lifecycle reconciliation,
+operation gates, capacity controls, input batching/read-only transitions, and
+resize coalescing.
 
 There are currently no automated tests for the CLI argument parser, browser
 interactions, accessibility tree, live provider processes, PTY I/O, installers,
@@ -58,6 +64,11 @@ For any desktop change, verify in the native Tauri window:
   panes; each accepts input, resizes, reports exit, stops independently, and
   leaves no process running after its repository closes or Axio is force-closed
   on Windows;
+- Terminal launch controls wait for authoritative app-wide capacity, clamp the
+  batch to remaining slots, survive task switches, and recover from capacity
+  query errors without enabling an unsafe launch;
+- stopped/exited panes preserve scrollback but reject input, and repeated
+  Stop/Close actions never duplicate native work or resurrect a closed pane;
 - agent lifecycle buttons show valid transitions and errors;
 - task creation keeps invalid/recoverable errors in the dialog, while valid
   creation, directions, and review decisions update through Tauri IPC;
@@ -112,3 +123,6 @@ Before claiming daily-workspace readiness, add:
 - native window and crash-recovery E2E tests;
 - install, update, rollback, and uninstall tests on every supported platform;
 - performance budgets for startup, memory, and sustained event throughput.
+
+The detailed terminal automation and packaged-smoke boundary is in
+[`terminal-mode.md`](terminal-mode.md).

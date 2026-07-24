@@ -253,13 +253,16 @@ These are dependency-aware passes, not release promises:
 1. **Completed audited pass:** event hierarchy, review attention, composer
    context, contrast, focus behavior, selective glass, inspector modes, task
    validation, and command-palette recovery.
-2. **Runtime-state pass:** real question, failure, conflict, permission,
-   terminal, diff, and recovery states using truthful data.
+2. **Runtime-state pass:** real question, failure, conflict, permission, diff,
+   connector-authored terminal narrative, and recovery states using truthful
+   data. The transient PTY surface itself is implemented and documented in
+   [`terminal-mode.md`](terminal-mode.md).
 3. **Re-entry and density pass:** meaningful task overview, materially
    different density modes, and evidence-backed semantic motion.
 
 Avoid polishing simulated data so deeply that it delays the real repository,
-connector, terminal, and Git outcomes in [`product-plan.md`](product-plan.md).
+connector normalization, terminal narrative, and Git outcomes in
+[`product-plan.md`](product-plan.md).
 The UI pass should establish primitives that can receive truthful live events.
 
 ## Verification
